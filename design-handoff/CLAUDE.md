@@ -4,7 +4,7 @@ Keepsake — a notes-and-tasks Android app. `com.stackpointer.list`.
 
 ## Source of truth
 
-The design lives in `design_handoff_notes_tasks/`. Read `README.md`, `DESIGN_TOKENS.md`,
+The design lives in `design-handoff/`. Read `README.md`, `DESIGN_TOKENS.md`,
 `SCREENS.md` and `DATA_MODEL.md` before writing UI code. The HTML files in `design/` are references,
 not code to port — never embed them or copy their markup.
 

@@ -5,7 +5,7 @@ original design handoff was "Keepsake"; the shipping app name is "Digital List".
 
 ## Source of truth
 
-The design lives in `Notes and Tasks App Design/design_handoff_notes_tasks/`. Read `README.md`,
+The design lives in `design-handoff/`. Read `README.md`,
 `DESIGN_TOKENS.md`, `SCREENS.md` and `DATA_MODEL.md` before writing UI code. The HTML files in
 `design/` are references, not code to port — never embed them or copy their markup. Build
 `SCREENS.md` **11–30** (the docked capture-bar pattern); screens 01/02/05/07 are superseded and
