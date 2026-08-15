@@ -54,6 +54,7 @@ fun ItemRow(
     checklistProgress: String? = null,
     isOverdue: Boolean = false,
     onToggleStar: (() -> Unit)? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     Surface(
         onClick = onClick,
@@ -72,7 +73,12 @@ fun ItemRow(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    // Disabled states read at 38% onSurface per DESIGN_TOKENS.md's contrast rules.
+                    color = if (isCompleted) {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                     textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
                 )
                 if (metadata != null || checklistProgress != null) {
@@ -125,6 +131,7 @@ fun ItemRow(
                 // Reserve no extra space for an absent star — starring from the row itself
                 // isn't part of the design (screen 24's detail top bar owns that toggle).
             }
+            trailingContent?.invoke()
         }
     }
 }
