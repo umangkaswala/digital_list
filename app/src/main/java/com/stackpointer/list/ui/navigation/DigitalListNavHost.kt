@@ -3,10 +3,15 @@ package com.stackpointer.list.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.ui.screens.completed.CompletedScreen
+import com.stackpointer.list.ui.screens.detail.DetailScreen
+import com.stackpointer.list.ui.screens.editor.EditorScreen
 import com.stackpointer.list.ui.screens.home.HomeScreen
 import com.stackpointer.list.ui.screens.noalert.NoAlertScreen
 import com.stackpointer.list.ui.screens.scheduled.ScheduledScreen
@@ -18,6 +23,12 @@ fun DigitalListNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
+    // Notes (a body present) open the editor; tasks/reminders/checklists open the detail
+    // screen — see Item.isNote. Both screens are reached the same way from every list.
+    val openItem: (Item) -> Unit = { item ->
+        navController.navigate(if (item.isNote) Routes.editor(item.id) else Routes.detail(item.id))
+    }
+
     NavHost(navController = navController, startDestination = Routes.HOME, modifier = modifier) {
         composable(Routes.HOME) {
             HomeScreen(
@@ -28,39 +39,35 @@ fun DigitalListNavHost(
                 onOpenPlace = {},
                 onOpenNoAlert = { navController.navigate(Routes.NO_ALERT) },
                 onOpenCompleted = { navController.navigate(Routes.COMPLETED) },
-                // TODO(M6): open the detail screen once it exists.
-                onOpenItem = {},
+                onOpenItem = openItem,
             )
         }
         composable(Routes.TODAY) {
-            TodayScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = {},
-            )
+            TodayScreen(onBack = navController::popBackStack, onOpenItem = openItem)
         }
         composable(Routes.SCHEDULED) {
-            ScheduledScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = {},
-            )
+            ScheduledScreen(onBack = navController::popBackStack, onOpenItem = openItem)
         }
         composable(Routes.STARRED) {
-            StarredScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = {},
-            )
+            StarredScreen(onBack = navController::popBackStack, onOpenItem = openItem)
         }
         composable(Routes.NO_ALERT) {
-            NoAlertScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = {},
-            )
+            NoAlertScreen(onBack = navController::popBackStack, onOpenItem = openItem)
         }
         composable(Routes.COMPLETED) {
-            CompletedScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = {},
-            )
+            CompletedScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+        }
+        composable(
+            route = Routes.DETAIL_PATTERN,
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
+        ) {
+            DetailScreen(onBack = navController::popBackStack)
+        }
+        composable(
+            route = Routes.EDITOR_PATTERN,
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
+        ) {
+            EditorScreen(onBack = navController::popBackStack)
         }
     }
 }

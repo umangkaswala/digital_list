@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.BucketLabel
 import com.stackpointer.list.ui.components.CaptureBar
 import com.stackpointer.list.ui.components.EmptyState
@@ -45,7 +46,7 @@ import java.time.Instant
 @Composable
 fun ScheduledScreen(
     onBack: () -> Unit,
-    onOpenItem: (String) -> Unit,
+    onOpenItem: (Item) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ScheduledViewModel = hiltViewModel(),
     captureViewModel: CaptureViewModel = hiltViewModel(),
@@ -88,7 +89,7 @@ fun ScheduledScreen(
 private fun ScheduledContent(
     uiState: ScheduledUiState,
     onBack: () -> Unit,
-    onOpenItem: (String) -> Unit,
+    onOpenItem: (Item) -> Unit,
     onCompleteItem: (String) -> Unit,
     onOpenCapture: () -> Unit,
     onOpenSort: () -> Unit,
@@ -156,7 +157,7 @@ private fun ScheduledContent(
                         isCompleted = item.isCompleted,
                         isStarred = item.isStarred,
                         isOverdue = bucket.label == BucketLabel.PAST,
-                        onClick = { onOpenItem(item.id) },
+                        onClick = { onOpenItem(item) },
                         onToggleComplete = { onCompleteItem(item.id) },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )

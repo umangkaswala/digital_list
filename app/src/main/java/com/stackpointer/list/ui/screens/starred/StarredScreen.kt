@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.ui.components.EmptyState
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.UndoSnackbarHost
@@ -47,7 +48,7 @@ import java.time.Instant
 @Composable
 fun StarredScreen(
     onBack: () -> Unit,
-    onOpenItem: (String) -> Unit,
+    onOpenItem: (Item) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StarredViewModel = hiltViewModel(),
 ) {
@@ -75,7 +76,7 @@ fun StarredScreen(
 private fun StarredContent(
     uiState: StarredUiState,
     onBack: () -> Unit,
-    onOpenItem: (String) -> Unit,
+    onOpenItem: (Item) -> Unit,
     onCompleteItem: (String) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
@@ -126,7 +127,7 @@ private fun StarredContent(
                     checklistProgress = ItemFormatting.checklistProgress(item),
                     isCompleted = item.isCompleted,
                     isStarred = item.isStarred,
-                    onClick = { onOpenItem(item.id) },
+                    onClick = { onOpenItem(item) },
                     onToggleComplete = { onCompleteItem(item.id) },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )

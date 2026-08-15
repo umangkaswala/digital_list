@@ -19,9 +19,14 @@ object ItemFormatting {
     private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
     private val monthDayFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.US)
     private val weekdayMonthDayFormatter = DateTimeFormatter.ofPattern("EEE, d MMM", Locale.US)
+    private val fullDateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.US)
 
     fun timeOnly(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): String =
         instant.atZone(zone).format(timeFormatter)
+
+    /** "14 Aug 2026" — screen 24's "Last modified" footer. */
+    fun fullDate(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): String =
+        instant.atZone(zone).format(fullDateFormatter)
 
     fun dueText(dueAt: Instant, now: Instant, zone: ZoneId = ZoneId.systemDefault()): String {
         val due = dueAt.atZone(zone)

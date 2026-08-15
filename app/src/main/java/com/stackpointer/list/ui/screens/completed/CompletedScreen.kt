@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.BucketLabel
 import com.stackpointer.list.ui.components.EmptyState
 import com.stackpointer.list.ui.components.ItemRow
@@ -37,7 +38,7 @@ import java.time.Instant
 @Composable
 fun CompletedScreen(
     onBack: () -> Unit,
-    onOpenItem: (String) -> Unit,
+    onOpenItem: (Item) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CompletedViewModel = hiltViewModel(),
 ) {
@@ -56,8 +57,8 @@ fun CompletedScreen(
 private fun CompletedContent(
     uiState: CompletedUiState,
     onBack: () -> Unit,
-    onOpenItem: (String) -> Unit,
-    onRestore: (com.stackpointer.list.domain.model.Item) -> Unit,
+    onOpenItem: (Item) -> Unit,
+    onRestore: (Item) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -106,7 +107,7 @@ private fun CompletedContent(
                             ?.let { done -> ItemFormatting.collectionNames(item)?.let { "$done · $it" } ?: done },
                         isCompleted = true,
                         isStarred = item.isStarred,
-                        onClick = { onOpenItem(item.id) },
+                        onClick = { onOpenItem(item) },
                         onToggleComplete = { onRestore(item) },
                         trailingContent = {
                             IconButton(onClick = { onRestore(item) }) {

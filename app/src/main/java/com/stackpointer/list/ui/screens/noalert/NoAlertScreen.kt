@@ -23,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import com.stackpointer.list.ui.components.CaptureBar
 import com.stackpointer.list.ui.components.EmptyState
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.UndoSnackbarHost
+import com.stackpointer.list.ui.components.showUndoSnackbar
 import com.stackpointer.list.ui.screens.capture.CaptureMode
 import com.stackpointer.list.ui.screens.capture.CapturePrefill
 import com.stackpointer.list.ui.screens.capture.CaptureSheet
@@ -49,12 +51,20 @@ import java.time.Instant
 @Composable
 fun NoAlertScreen(
     onBack: () -> Unit,
-    onOpenItem: (String) -> Unit,
+    onOpenItem: (Item) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NoAlertViewModel = hiltViewModel(),
     captureViewModel: CaptureViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            if (snackbarHostState.showUndoSnackbar(event.message)) viewModel.undo(event)
+        }
+    }
+
     NoAlertContent(
         uiState = uiState,
         onBack = onBack,
@@ -62,6 +72,8 @@ fun NoAlertScreen(
         onOpenCapture = { captureViewModel.openFor(CapturePrefill.NONE) },
         onAddTime = { item -> captureViewModel.openForExisting(item, CaptureMode.TIME) },
         onCommitTemplate = viewModel::commitTemplate,
+        onCompleteItem = viewModel::completeItem,
+        snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
     CaptureSheet(viewModel = captureViewModel)
@@ -72,10 +84,12 @@ fun NoAlertScreen(
 private fun NoAlertContent(
     uiState: NoAlertUiState,
     onBack: () -> Unit,
-    onOpenItem: (String) -> Unit,
+    onOpenItem: (Item) -> Unit,
     onOpenCapture: () -> Unit,
     onAddTime: (Item) -> Unit,
     onCommitTemplate: (TemplateDraft) -> Unit,
+    onCompleteItem: (String) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -100,7 +114,7 @@ private fun NoAlertContent(
                 modifier = Modifier.padding(16.dp),
             )
         },
-        snackbarHost = { UndoSnackbarHost(remember { SnackbarHostState() }) },
+        snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         if (uiState.isEmpty) {
             EmptyState(
@@ -131,10 +145,8 @@ private fun NoAlertContent(
                     checklistProgress = ItemFormatting.checklistProgress(item),
                     isCompleted = item.isCompleted,
                     isStarred = item.isStarred,
-                    onClick = { onOpenItem(item.id) },
-                    // TODO(M6): completing a no-alert item from here — wired once the
-                    // detail/editor screens exist to confirm the interaction.
-                    onToggleComplete = {},
+                    onClick = { onOpenItem(item) },
+                    onToggleComplete = { onCompleteItem(item.id) },
                     trailingContent = {
                         AssistChip(
                             onClick = { onAddTime(item) },
@@ -194,6 +206,7 @@ private fun NoAlertScreenPreview() {
             onOpenCapture = {},
             onAddTime = {},
             onCommitTemplate = {},
+            onCompleteItem = {},
         )
     }
 }
