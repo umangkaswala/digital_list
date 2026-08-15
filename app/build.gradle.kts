@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.material3)
     implementation(libs.material.icons.core)
+    implementation(libs.material.icons.extended)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
