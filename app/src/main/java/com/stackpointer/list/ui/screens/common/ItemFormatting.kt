@@ -20,6 +20,9 @@ object ItemFormatting {
     private val monthDayFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.US)
     private val weekdayMonthDayFormatter = DateTimeFormatter.ofPattern("EEE, d MMM", Locale.US)
 
+    fun timeOnly(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): String =
+        instant.atZone(zone).format(timeFormatter)
+
     fun dueText(dueAt: Instant, now: Instant, zone: ZoneId = ZoneId.systemDefault()): String {
         val due = dueAt.atZone(zone)
         val today = now.atZone(zone).toLocalDate()
@@ -74,7 +77,7 @@ object ItemFormatting {
         RecurrenceFreq.CUSTOM -> "Every ${recurrence.interval} days"
     }
 
-    private fun ordinal(day: Int): String {
+    fun ordinal(day: Int): String {
         if (day in 11..13) return "${day}th"
         return when (day % 10) {
             1 -> "${day}st"

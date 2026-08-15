@@ -3,6 +3,7 @@ package com.stackpointer.list.ui.screens.noalert
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.stackpointer.list.domain.model.SavedView
+import com.stackpointer.list.domain.model.TemplateDraft
 import com.stackpointer.list.domain.repository.ItemRepository
 import com.stackpointer.list.domain.repository.TemplateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,4 +30,9 @@ class NoAlertViewModel @Inject constructor(
     ) { items, templates ->
         NoAlertUiState(isLoading = false, items = items, previewTemplate = templates.firstOrNull())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NoAlertUiState())
+
+    /** The template card's trailing "add" button commits it directly, per screen 28. */
+    fun commitTemplate(draft: TemplateDraft) {
+        viewModelScope.launch { itemRepository.save(draft.toItem()) }
+    }
 }

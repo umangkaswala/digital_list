@@ -31,11 +31,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.Template
+import com.stackpointer.list.domain.model.TemplateDraft
 import com.stackpointer.list.ui.components.CaptureBar
 import com.stackpointer.list.ui.components.EmptyState
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.UndoSnackbarHost
+import com.stackpointer.list.ui.screens.capture.CaptureMode
+import com.stackpointer.list.ui.screens.capture.CapturePrefill
+import com.stackpointer.list.ui.screens.capture.CaptureSheet
+import com.stackpointer.list.ui.screens.capture.CaptureViewModel
 import com.stackpointer.list.ui.screens.common.ItemFormatting
 import com.stackpointer.list.ui.theme.DigitalListTheme
 import java.time.Instant
@@ -46,9 +52,19 @@ fun NoAlertScreen(
     onOpenItem: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NoAlertViewModel = hiltViewModel(),
+    captureViewModel: CaptureViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    NoAlertContent(uiState = uiState, onBack = onBack, onOpenItem = onOpenItem, modifier = modifier)
+    NoAlertContent(
+        uiState = uiState,
+        onBack = onBack,
+        onOpenItem = onOpenItem,
+        onOpenCapture = { captureViewModel.openFor(CapturePrefill.NONE) },
+        onAddTime = { item -> captureViewModel.openForExisting(item, CaptureMode.TIME) },
+        onCommitTemplate = viewModel::commitTemplate,
+        modifier = modifier,
+    )
+    CaptureSheet(viewModel = captureViewModel)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +73,9 @@ private fun NoAlertContent(
     uiState: NoAlertUiState,
     onBack: () -> Unit,
     onOpenItem: (String) -> Unit,
+    onOpenCapture: () -> Unit,
+    onAddTime: (Item) -> Unit,
+    onCommitTemplate: (TemplateDraft) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -77,8 +96,7 @@ private fun NoAlertContent(
         bottomBar = {
             CaptureBar(
                 placeholder = "Add a note or task",
-                // TODO(M5): open the capture sheet.
-                onClick = {},
+                onClick = onOpenCapture,
                 modifier = Modifier.padding(16.dp),
             )
         },
@@ -119,8 +137,7 @@ private fun NoAlertContent(
                     onToggleComplete = {},
                     trailingContent = {
                         AssistChip(
-                            // TODO(M5): open the capture sheet's time mode for this item.
-                            onClick = {},
+                            onClick = { onAddTime(item) },
                             label = { Text("Add time") },
                             leadingIcon = { Icon(Icons.Filled.AlarmAdd, contentDescription = null, modifier = Modifier.padding(0.dp)) },
                             colors = AssistChipDefaults.assistChipColors(),
@@ -130,7 +147,7 @@ private fun NoAlertContent(
                 )
             }
             uiState.previewTemplate?.let { template ->
-                item { TryTheseOutFooter(template = template) }
+                item { TryTheseOutFooter(template = template, onCommit = { onCommitTemplate(template.draft) }) }
             }
             item { androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 88.dp)) }
         }
@@ -138,7 +155,7 @@ private fun NoAlertContent(
 }
 
 @Composable
-private fun TryTheseOutFooter(template: Template, modifier: Modifier = Modifier) {
+private fun TryTheseOutFooter(template: Template, onCommit: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.large,
@@ -159,10 +176,7 @@ private fun TryTheseOutFooter(template: Template, modifier: Modifier = Modifier)
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(
-                // TODO(M5): commit this template's draft directly.
-                onClick = {},
-            ) {
+            IconButton(onClick = onCommit) {
                 Icon(imageVector = Icons.Filled.Add, contentDescription = "Add ${template.title}")
             }
         }
@@ -173,6 +187,13 @@ private fun TryTheseOutFooter(template: Template, modifier: Modifier = Modifier)
 @Composable
 private fun NoAlertScreenPreview() {
     DigitalListTheme {
-        NoAlertContent(uiState = NoAlertUiState(isLoading = false), onBack = {}, onOpenItem = {})
+        NoAlertContent(
+            uiState = NoAlertUiState(isLoading = false),
+            onBack = {},
+            onOpenItem = {},
+            onOpenCapture = {},
+            onAddTime = {},
+            onCommitTemplate = {},
+        )
     }
 }

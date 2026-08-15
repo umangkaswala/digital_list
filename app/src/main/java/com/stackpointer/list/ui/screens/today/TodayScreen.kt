@@ -33,6 +33,9 @@ import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.SectionHeader
 import com.stackpointer.list.ui.components.UndoSnackbarHost
 import com.stackpointer.list.ui.components.showUndoSnackbar
+import com.stackpointer.list.ui.screens.capture.CapturePrefill
+import com.stackpointer.list.ui.screens.capture.CaptureSheet
+import com.stackpointer.list.ui.screens.capture.CaptureViewModel
 import com.stackpointer.list.ui.screens.common.ItemFormatting
 import com.stackpointer.list.ui.theme.DigitalListTheme
 import java.time.Instant
@@ -43,6 +46,7 @@ fun TodayScreen(
     onOpenItem: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TodayViewModel = hiltViewModel(),
+    captureViewModel: CaptureViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -58,9 +62,11 @@ fun TodayScreen(
         onBack = onBack,
         onOpenItem = onOpenItem,
         onCompleteItem = viewModel::completeItem,
+        onOpenCapture = { captureViewModel.openFor(CapturePrefill.TODAY) },
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
+    CaptureSheet(viewModel = captureViewModel)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +76,7 @@ private fun TodayContent(
     onBack: () -> Unit,
     onOpenItem: (String) -> Unit,
     onCompleteItem: (String) -> Unit,
+    onOpenCapture: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
@@ -93,8 +100,7 @@ private fun TodayContent(
         bottomBar = {
             CaptureBar(
                 placeholder = "Add to today",
-                // TODO(M5): open the capture sheet, prefilled for today.
-                onClick = {},
+                onClick = onOpenCapture,
                 modifier = Modifier.padding(16.dp),
             )
         },
@@ -178,6 +184,7 @@ private fun TodayScreenPreview() {
             onBack = {},
             onOpenItem = {},
             onCompleteItem = {},
+            onOpenCapture = {},
             snackbarHostState = remember { SnackbarHostState() },
         )
     }

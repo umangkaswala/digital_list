@@ -20,7 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,6 +34,10 @@ import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.SectionHeader
 import com.stackpointer.list.ui.components.UndoSnackbarHost
 import com.stackpointer.list.ui.components.showUndoSnackbar
+import com.stackpointer.list.ui.screens.capture.CapturePrefill
+import com.stackpointer.list.ui.screens.capture.CaptureSheet
+import com.stackpointer.list.ui.screens.capture.CaptureViewModel
+import com.stackpointer.list.ui.screens.capture.SortBySheet
 import com.stackpointer.list.ui.screens.common.ItemFormatting
 import com.stackpointer.list.ui.theme.DigitalListTheme
 import java.time.Instant
@@ -42,9 +48,11 @@ fun ScheduledScreen(
     onOpenItem: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ScheduledViewModel = hiltViewModel(),
+    captureViewModel: CaptureViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var sortSheetOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -57,9 +65,22 @@ fun ScheduledScreen(
         onBack = onBack,
         onOpenItem = onOpenItem,
         onCompleteItem = viewModel::completeItem,
+        onOpenCapture = { captureViewModel.openFor(CapturePrefill.SCHEDULED) },
+        onOpenSort = { sortSheetOpen = true },
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
+    CaptureSheet(viewModel = captureViewModel)
+    if (sortSheetOpen) {
+        SortBySheet(
+            selected = uiState.sortOrder,
+            onSelect = {
+                viewModel.setSortOrder(it)
+                sortSheetOpen = false
+            },
+            onDismiss = { sortSheetOpen = false },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +90,8 @@ private fun ScheduledContent(
     onBack: () -> Unit,
     onOpenItem: (String) -> Unit,
     onCompleteItem: (String) -> Unit,
+    onOpenCapture: () -> Unit,
+    onOpenSort: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
@@ -83,8 +106,7 @@ private fun ScheduledContent(
                     }
                 },
                 actions = {
-                    // TODO(M8): wire the sort-by sheet (screen 26) once it exists.
-                    IconButton(onClick = {}) { Icon(Icons.Filled.SwapVert, contentDescription = "Sort by") }
+                    IconButton(onClick = onOpenSort) { Icon(Icons.Filled.SwapVert, contentDescription = "Sort by") }
                     IconButton(onClick = {}) { Icon(Icons.Filled.MoreVert, contentDescription = "More options") }
                 },
             )
@@ -92,8 +114,7 @@ private fun ScheduledContent(
         bottomBar = {
             CaptureBar(
                 placeholder = "Add a scheduled task",
-                // TODO(M5): open the capture sheet in time mode.
-                onClick = {},
+                onClick = onOpenCapture,
                 modifier = Modifier.padding(16.dp),
             )
         },
@@ -163,6 +184,8 @@ private fun ScheduledScreenPreview() {
             onBack = {},
             onOpenItem = {},
             onCompleteItem = {},
+            onOpenCapture = {},
+            onOpenSort = {},
             snackbarHostState = remember { SnackbarHostState() },
         )
     }
