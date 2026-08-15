@@ -50,4 +50,6 @@ data class ItemEntity(
     val sortOrder: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val isShownInNotificationBar: Boolean = false,
+    val isPinnedToNotification: Boolean = false,
 )

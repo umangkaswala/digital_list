@@ -22,6 +22,7 @@ class BootReceiver : BroadcastReceiver() {
 
     @Inject lateinit var itemRepository: ItemRepository
     @Inject lateinit var alarmScheduler: AlarmScheduler
+    @Inject lateinit var pinnedNotificationManager: PinnedNotificationManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -33,6 +34,9 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 val items = itemRepository.observeSavedView(SavedView.SCHEDULED).first()
                 alarmScheduler.rescheduleAll(items)
+                // Every notification, ongoing or not, is cleared on reboot too — repost
+                // whatever's still pin/show-eligible.
+                pinnedNotificationManager.resyncAll()
             } finally {
                 pendingResult.finish()
             }

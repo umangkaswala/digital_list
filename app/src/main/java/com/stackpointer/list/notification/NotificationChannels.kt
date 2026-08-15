@@ -4,14 +4,14 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 
-/** The three alert-type channels from DATA_MODEL.md. Created once from
- * [com.stackpointer.list.DigitalListApp.onCreate] — channel creation is idempotent per id, so
- * there's no harm calling this more than once. The M7b "Pinned" channel joins this object when
- * that milestone lands. */
+/** The three alert-type channels from DATA_MODEL.md, plus the M7b `Pinned` channel used by
+ * [PinnedNotificationManager]. Created once from [com.stackpointer.list.DigitalListApp.onCreate]
+ * — channel creation is idempotent per id, so there's no harm calling this more than once. */
 object NotificationChannels {
     const val SOFT = "alert_soft"
     const val MEDIUM = "alert_medium"
     const val INSISTENT = "alert_insistent"
+    const val PINNED = "pinned"
 
     fun createAll(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -26,6 +26,10 @@ object NotificationChannels {
                 },
                 NotificationChannel(INSISTENT, "Insistent alerts", NotificationManager.IMPORTANCE_HIGH).apply {
                     description = "Repeats until you respond"
+                },
+                NotificationChannel(PINNED, "Pinned notes and tasks", NotificationManager.IMPORTANCE_LOW).apply {
+                    description = "Items shown or pinned in the notification bar"
+                    setSound(null, null)
                 },
             ),
         )

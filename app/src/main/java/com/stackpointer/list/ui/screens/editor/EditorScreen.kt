@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -52,6 +53,7 @@ import com.stackpointer.list.Features
 import com.stackpointer.list.domain.model.Collection
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.SubItem
+import com.stackpointer.list.ui.components.NotificationBarMenuItems
 import com.stackpointer.list.ui.theme.DigitalListTheme
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -79,6 +81,8 @@ fun EditorScreen(
         onTitleChange = viewModel::updateTitle,
         onBodyChange = viewModel::updateBody,
         onTogglePinned = viewModel::togglePinned,
+        onToggleShownInNotificationBar = viewModel::toggleShownInNotificationBar,
+        onTogglePinnedToNotification = viewModel::togglePinnedToNotification,
         onToggleCollection = viewModel::toggleCollection,
         onAddChecklistItem = viewModel::addChecklistItem,
         onChecklistItemTextChange = viewModel::updateChecklistItemText,
@@ -95,6 +99,8 @@ private fun EditorContent(
     onTitleChange: (String) -> Unit,
     onBodyChange: (String) -> Unit,
     onTogglePinned: () -> Unit,
+    onToggleShownInNotificationBar: () -> Unit,
+    onTogglePinnedToNotification: () -> Unit,
     onToggleCollection: (Collection) -> Unit,
     onAddChecklistItem: () -> Unit,
     onChecklistItemTextChange: (String, String) -> Unit,
@@ -102,6 +108,7 @@ private fun EditorContent(
     modifier: Modifier = Modifier,
 ) {
     var collectionPickerOpen by remember { mutableStateOf(false) }
+    var overflowMenuOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -123,7 +130,17 @@ private fun EditorContent(
                     IconButton(onClick = {}) {
                         Icon(Icons.Filled.Notifications, contentDescription = null)
                     }
-                    IconButton(onClick = {}) { Icon(Icons.Filled.MoreVert, contentDescription = "More options") }
+                    IconButton(onClick = { overflowMenuOpen = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(expanded = overflowMenuOpen, onDismissRequest = { overflowMenuOpen = false }) {
+                        NotificationBarMenuItems(
+                            isShownInNotificationBar = uiState.isShownInNotificationBar,
+                            isPinnedToNotification = uiState.isPinnedToNotification,
+                            onToggleShown = { overflowMenuOpen = false; onToggleShownInNotificationBar() },
+                            onTogglePinned = { overflowMenuOpen = false; onTogglePinnedToNotification() },
+                        )
+                    }
                 },
             )
         },
@@ -283,6 +300,8 @@ private fun EditorScreenPreview() {
             onTitleChange = {},
             onBodyChange = {},
             onTogglePinned = {},
+            onToggleShownInNotificationBar = {},
+            onTogglePinnedToNotification = {},
             onToggleCollection = {},
             onAddChecklistItem = {},
             onChecklistItemTextChange = { _, _ -> },

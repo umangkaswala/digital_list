@@ -17,6 +17,7 @@ interface ItemRepository {
     fun observeSavedView(view: SavedView): Flow<List<Item>>
     fun observeItem(id: String): Flow<Item?>
     fun observeAll(): Flow<List<Item>>
+    fun observeNotificationVisibleItems(): Flow<List<Item>>
 
     suspend fun save(item: Item)
     suspend fun complete(id: String): UndoToken
@@ -26,6 +27,8 @@ interface ItemRepository {
 
     suspend fun setStarred(id: String, starred: Boolean)
     suspend fun setPinned(id: String, pinned: Boolean)
+    suspend fun setShownInNotificationBar(id: String, shown: Boolean)
+    suspend fun setPinnedToNotification(id: String, pinned: Boolean)
     suspend fun toggleSubItem(subItemId: String)
 
     suspend fun undo(token: UndoToken)

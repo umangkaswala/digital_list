@@ -59,14 +59,18 @@ class CaptureViewModel @Inject constructor(
             CapturePrefill.TODAY, CapturePrefill.SCHEDULED -> CaptureMode.TIME
             CapturePrefill.PLACE -> CaptureMode.PLACE
         }
-        _uiState.update { CaptureUiState(isOpen = true, draft = draft, mode = mode, allCollections = it.allCollections) }
+        _uiState.update {
+            CaptureUiState(isOpen = true, draft = draft, isPersisted = false, mode = mode, allCollections = it.allCollections)
+        }
     }
 
     /** Opens the sheet against an already-persisted item (e.g. the "Add time" chip on an
      * existing no-alert item) rather than a fresh draft — [confirm] then updates it in place,
      * since Room's upsert matches by the item's existing id. */
     fun openForExisting(item: Item, mode: CaptureMode) {
-        _uiState.update { CaptureUiState(isOpen = true, draft = item, mode = mode, allCollections = it.allCollections) }
+        _uiState.update {
+            CaptureUiState(isOpen = true, draft = item, isPersisted = true, mode = mode, allCollections = it.allCollections)
+        }
     }
 
     fun dismiss() {
@@ -189,8 +193,25 @@ class CaptureViewModel @Inject constructor(
         if (draft.title.isBlank()) return
         viewModelScope.launch {
             itemRepository.save(draft.copy(updatedAt = Instant.now()))
+            _uiState.update { it.copy(isPersisted = true) }
             dismiss()
         }
+    }
+
+    // --- Notification bar overflow (net-new, next to the drag handle) ---
+
+    fun toggleShownInNotificationBar() {
+        if (!uiState.value.isPersisted) return
+        val newValue = !uiState.value.draft.isShownInNotificationBar
+        updateDraft { it.copy(isShownInNotificationBar = newValue) }
+        viewModelScope.launch { itemRepository.setShownInNotificationBar(uiState.value.draft.id, newValue) }
+    }
+
+    fun togglePinnedToNotification() {
+        if (!uiState.value.isPersisted) return
+        val newValue = !uiState.value.draft.isPinnedToNotification
+        updateDraft { it.copy(isPinnedToNotification = newValue) }
+        viewModelScope.launch { itemRepository.setPinnedToNotification(uiState.value.draft.id, newValue) }
     }
 
     private inline fun updateDraft(transform: (Item) -> Item) {

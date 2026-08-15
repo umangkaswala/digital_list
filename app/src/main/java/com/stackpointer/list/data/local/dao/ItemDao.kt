@@ -65,8 +65,9 @@ interface ItemDao {
     @Query("SELECT * FROM items WHERE deletedAt IS NOT NULL")
     fun observeRecycleBin(): Flow<List<ItemWithDetails>>
 
-    // observeNotificationVisible() lands with the M7b migration that adds
-    // isShownInNotificationBar / isPinnedToNotification to this table — not part of schema v1.
+    @Transaction
+    @Query("SELECT * FROM items WHERE deletedAt IS NULL AND (isShownInNotificationBar = 1 OR isPinnedToNotification = 1)")
+    fun observeNotificationVisibleItems(): Flow<List<ItemWithDetails>>
 
     @Upsert
     suspend fun upsertItem(item: ItemEntity)
@@ -94,6 +95,12 @@ interface ItemDao {
 
     @Query("UPDATE items SET isPinned = :pinned, updatedAt = :now WHERE id = :id")
     suspend fun setPinned(id: String, pinned: Boolean, now: Long)
+
+    @Query("UPDATE items SET isShownInNotificationBar = :shown, updatedAt = :now WHERE id = :id")
+    suspend fun setShownInNotificationBar(id: String, shown: Boolean, now: Long)
+
+    @Query("UPDATE items SET isPinnedToNotification = :pinned, updatedAt = :now WHERE id = :id")
+    suspend fun setPinnedToNotification(id: String, pinned: Boolean, now: Long)
 
     @Query("UPDATE items SET deletedAt = :deletedAt, updatedAt = :now WHERE id = :id")
     suspend fun setDeletedAt(id: String, deletedAt: Long?, now: Long)

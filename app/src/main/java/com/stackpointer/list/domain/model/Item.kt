@@ -32,6 +32,13 @@ data class Item(
     val sortOrder: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
+    /** A normal, swipe-dismissible status notification — distinct from [isPinned], which is
+     * the in-app pin-to-top-of-list. See CLAUDE.md's notification-bar & pin feature. */
+    val isShownInNotificationBar: Boolean = false,
+    /** An ongoing, non-dismissible status notification. Implies [isShownInNotificationBar]
+     * for rendering purposes (render once, ongoing) even though the two flags are independent
+     * in storage. */
+    val isPinnedToNotification: Boolean = false,
 ) {
     /** Presence of a body makes this read as a note. */
     val isNote: Boolean get() = !body.isNullOrEmpty()

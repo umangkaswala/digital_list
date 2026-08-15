@@ -25,7 +25,7 @@ import com.stackpointer.list.data.local.entity.TemplateEntity
         TemplateEntity::class,
         PlaceEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

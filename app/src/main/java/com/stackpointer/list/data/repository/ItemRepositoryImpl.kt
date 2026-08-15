@@ -51,6 +51,9 @@ class ItemRepositoryImpl @Inject constructor(
     override fun observeAll(): Flow<List<Item>> =
         itemDao.observeAll().map { list -> list.map { it.toDomain() } }
 
+    override fun observeNotificationVisibleItems(): Flow<List<Item>> =
+        itemDao.observeNotificationVisibleItems().map { list -> list.map { it.toDomain() } }
+
     override suspend fun save(item: Item) {
         item.recurrence?.let { recurrenceDao.upsert(it.toEntity()) }
         itemDao.upsertItem(item.toEntity())
@@ -110,6 +113,14 @@ class ItemRepositoryImpl @Inject constructor(
 
     override suspend fun setPinned(id: String, pinned: Boolean) {
         itemDao.setPinned(id, pinned, Instant.now().toEpochMilli())
+    }
+
+    override suspend fun setShownInNotificationBar(id: String, shown: Boolean) {
+        itemDao.setShownInNotificationBar(id, shown, Instant.now().toEpochMilli())
+    }
+
+    override suspend fun setPinnedToNotification(id: String, pinned: Boolean) {
+        itemDao.setPinnedToNotification(id, pinned, Instant.now().toEpochMilli())
     }
 
     override suspend fun toggleSubItem(subItemId: String) {

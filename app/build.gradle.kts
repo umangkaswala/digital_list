@@ -47,6 +47,21 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+configurations.all {
+    resolutionStrategy {
+        // The Compose BOM's alignment constraints strictly pin kotlinx-serialization to 1.7.3,
+        // but androidx.room:room-migration:2.8.4 (MigrationTestHelper's schema-bundle parser)
+        // needs 1.8.1 — its generated serializers call GeneratedSerializer.typeParametersSerializers(),
+        // which 1.7.3's runtime doesn't implement, so androidTest crashes with an
+        // AbstractMethodError before the migration itself ever runs. force() is the documented
+        // escape hatch for overriding a `strictly` constraint from elsewhere in the graph.
+        force("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.8.1")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.8.1")
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

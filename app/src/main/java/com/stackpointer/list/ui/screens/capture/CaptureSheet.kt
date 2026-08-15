@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +18,10 @@ import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -33,6 +37,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -42,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.stackpointer.list.Features
 import com.stackpointer.list.domain.model.TriggerType
+import com.stackpointer.list.ui.components.NotificationBarMenuItems
 
 /**
  * The capture sheet — screens 17-23, one modal bottom sheet with five mode panels. Callers
@@ -63,9 +72,32 @@ fun CaptureSheet(viewModel: CaptureViewModel, modifier: Modifier = Modifier) {
         ActivityResultContracts.RequestPermission(),
     ) { /* AlarmReceiver checks the permission again before posting, regardless of the result. */ }
 
+    var overflowMenuOpen by remember { mutableStateOf(false) }
+
     ModalBottomSheet(
         onDismissRequest = viewModel::dismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        // Net-new, not in the original 30 screens: a more_vert overflow next to the drag
+        // handle for the notification-bar toggles, disabled until this draft has a persisted
+        // id (see CaptureUiState.isPersisted).
+        dragHandle = {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                BottomSheetDefaults.DragHandle(modifier = Modifier.align(Alignment.Center))
+                Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp)) {
+                    IconButton(onClick = { overflowMenuOpen = true }, enabled = uiState.isPersisted) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(expanded = overflowMenuOpen, onDismissRequest = { overflowMenuOpen = false }) {
+                        NotificationBarMenuItems(
+                            isShownInNotificationBar = uiState.draft.isShownInNotificationBar,
+                            isPinnedToNotification = uiState.draft.isPinnedToNotification,
+                            onToggleShown = { overflowMenuOpen = false; viewModel.toggleShownInNotificationBar() },
+                            onTogglePinned = { overflowMenuOpen = false; viewModel.togglePinnedToNotification() },
+                        )
+                    }
+                }
+            }
+        },
         modifier = modifier,
     ) {
         TextField(

@@ -11,6 +11,8 @@ data class EditorUiState(
     val title: String = "",
     val body: String = "",
     val isPinned: Boolean = false,
+    val isShownInNotificationBar: Boolean = false,
+    val isPinnedToNotification: Boolean = false,
     val collections: List<Collection> = emptyList(),
     val allCollections: List<Collection> = emptyList(),
     val subItems: List<SubItem> = emptyList(),
@@ -22,6 +24,8 @@ data class EditorUiState(
         title = title,
         body = body.ifBlank { null },
         isPinned = isPinned,
+        isShownInNotificationBar = isShownInNotificationBar,
+        isPinnedToNotification = isPinnedToNotification,
         collections = collections,
         subItems = subItems,
     )

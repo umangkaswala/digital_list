@@ -38,6 +38,8 @@ fun ItemWithDetails.toDomain(): Item = Item(
     sortOrder = item.sortOrder,
     createdAt = item.createdAt,
     updatedAt = item.updatedAt,
+    isShownInNotificationBar = item.isShownInNotificationBar,
+    isPinnedToNotification = item.isPinnedToNotification,
 )
 
 fun Item.toEntity(): ItemEntity = ItemEntity(
@@ -62,6 +64,8 @@ fun Item.toEntity(): ItemEntity = ItemEntity(
     sortOrder = sortOrder,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    isShownInNotificationBar = isShownInNotificationBar,
+    isPinnedToNotification = isPinnedToNotification,
 )
 
 fun SubItemEntity.toDomain(): SubItem = SubItem(

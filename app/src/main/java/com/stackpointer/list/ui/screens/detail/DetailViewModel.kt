@@ -29,6 +29,16 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch { itemRepository.setStarred(item.id, !item.isStarred) }
     }
 
+    fun toggleShownInNotificationBar() {
+        val item = uiState.value.item ?: return
+        viewModelScope.launch { itemRepository.setShownInNotificationBar(item.id, !item.isShownInNotificationBar) }
+    }
+
+    fun togglePinnedToNotification() {
+        val item = uiState.value.item ?: return
+        viewModelScope.launch { itemRepository.setPinnedToNotification(item.id, !item.isPinnedToNotification) }
+    }
+
     fun complete() {
         viewModelScope.launch { itemRepository.complete(itemId) }
     }

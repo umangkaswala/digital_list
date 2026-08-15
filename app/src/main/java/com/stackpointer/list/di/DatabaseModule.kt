@@ -7,6 +7,7 @@ import com.stackpointer.list.data.local.dao.CollectionDao
 import com.stackpointer.list.data.local.dao.ItemDao
 import com.stackpointer.list.data.local.dao.RecurrenceDao
 import com.stackpointer.list.data.local.dao.TemplateDao
+import com.stackpointer.list.data.local.migration.MIGRATION_1_2
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,7 +22,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): DigitalListDatabase =
-        Room.databaseBuilder(context, DigitalListDatabase::class.java, "digital-list.db").build()
+        Room.databaseBuilder(context, DigitalListDatabase::class.java, "digital-list.db")
+            .addMigrations(MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideItemDao(database: DigitalListDatabase): ItemDao = database.itemDao()

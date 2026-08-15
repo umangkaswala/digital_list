@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +38,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +50,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.stackpointer.list.domain.model.AlertType
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.TriggerType
+import com.stackpointer.list.ui.components.NotificationBarMenuItems
 import com.stackpointer.list.ui.screens.capture.CaptureMode
 import com.stackpointer.list.ui.screens.capture.CaptureSheet
 import com.stackpointer.list.ui.screens.capture.CaptureViewModel
@@ -87,6 +93,8 @@ fun DetailScreen(
                 captureViewModel.openAlertTypeSheet()
             },
             onEditCollections = { captureViewModel.openForExisting(item, CaptureMode.LABEL) },
+            onToggleShownInNotificationBar = viewModel::toggleShownInNotificationBar,
+            onTogglePinnedToNotification = viewModel::togglePinnedToNotification,
             modifier = modifier,
         )
     }
@@ -107,9 +115,12 @@ private fun DetailContent(
     onEditEarlyAlert: () -> Unit,
     onEditAlertType: () -> Unit,
     onEditCollections: () -> Unit,
+    onToggleShownInNotificationBar: () -> Unit,
+    onTogglePinnedToNotification: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    var overflowMenuOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -128,7 +139,17 @@ private fun DetailContent(
                             contentDescription = if (item.isStarred) "Unstar" else "Star",
                         )
                     }
-                    IconButton(onClick = {}) { Icon(Icons.Filled.MoreVert, contentDescription = "More options") }
+                    IconButton(onClick = { overflowMenuOpen = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(expanded = overflowMenuOpen, onDismissRequest = { overflowMenuOpen = false }) {
+                        NotificationBarMenuItems(
+                            isShownInNotificationBar = item.isShownInNotificationBar,
+                            isPinnedToNotification = item.isPinnedToNotification,
+                            onToggleShown = { overflowMenuOpen = false; onToggleShownInNotificationBar() },
+                            onTogglePinned = { overflowMenuOpen = false; onTogglePinnedToNotification() },
+                        )
+                    }
                 },
             )
         },
@@ -255,6 +276,8 @@ private fun DetailScreenPreview() {
             onEditEarlyAlert = {},
             onEditAlertType = {},
             onEditCollections = {},
+            onToggleShownInNotificationBar = {},
+            onTogglePinnedToNotification = {},
         )
     }
 }

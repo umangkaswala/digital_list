@@ -49,6 +49,8 @@ class EditorViewModel @Inject constructor(
                 title = item.title,
                 body = item.body.orEmpty(),
                 isPinned = item.isPinned,
+                isShownInNotificationBar = item.isShownInNotificationBar,
+                isPinnedToNotification = item.isPinnedToNotification,
                 collections = item.collections,
                 subItems = item.subItems,
                 lastSavedAt = item.updatedAt,
@@ -73,6 +75,16 @@ class EditorViewModel @Inject constructor(
 
     fun togglePinned() {
         _uiState.update { it.copy(isPinned = !it.isPinned) }
+        scheduleAutosave(immediate = true)
+    }
+
+    fun toggleShownInNotificationBar() {
+        _uiState.update { it.copy(isShownInNotificationBar = !it.isShownInNotificationBar) }
+        scheduleAutosave(immediate = true)
+    }
+
+    fun togglePinnedToNotification() {
+        _uiState.update { it.copy(isPinnedToNotification = !it.isPinnedToNotification) }
         scheduleAutosave(immediate = true)
     }
 
