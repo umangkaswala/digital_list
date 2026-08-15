@@ -1,0 +1,14 @@
+*.iml
+.gradle/
+.idea/
+.DS_Store
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+/app/build/
+
+# Keep the unzipped design handoff, ignore the redundant archive
+Notes and Tasks App Design.zip
