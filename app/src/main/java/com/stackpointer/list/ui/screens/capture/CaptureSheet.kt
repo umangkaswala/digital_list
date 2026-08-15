@@ -1,5 +1,10 @@
 package com.stackpointer.list.ui.screens.capture
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,9 +36,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.stackpointer.list.Features
+import com.stackpointer.list.domain.model.TriggerType
 
 /**
  * The capture sheet — screens 17-23, one modal bottom sheet with five mode panels. Callers
@@ -46,6 +54,14 @@ import com.stackpointer.list.Features
 fun CaptureSheet(viewModel: CaptureViewModel, modifier: Modifier = Modifier) {
     val uiState by viewModel.uiState.collectAsState()
     if (!uiState.isOpen) return
+
+    val context = LocalContext.current
+    // Requested here rather than at launch, per DATA_MODEL.md — "at the first reminder
+    // creation, not at launch". Fires whenever a TIME-triggered draft is confirmed; harmless
+    // to call again once granted or permanently denied, since the system just no-ops the launch.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* AlarmReceiver checks the permission again before posting, regardless of the result. */ }
 
     ModalBottomSheet(
         onDismissRequest = viewModel::dismiss,
@@ -123,7 +139,16 @@ fun CaptureSheet(viewModel: CaptureViewModel, modifier: Modifier = Modifier) {
             }
 
             FloatingActionButton(
-                onClick = viewModel::confirm,
+                onClick = {
+                    if (uiState.draft.triggerType == TriggerType.TIME &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    viewModel.confirm()
+                },
                 containerColor = if (uiState.canConfirm) {
                     MaterialTheme.colorScheme.primaryContainer
                 } else {

@@ -1,6 +1,7 @@
 package com.stackpointer.list.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -22,11 +23,22 @@ import com.stackpointer.list.ui.screens.today.TodayScreen
 fun DigitalListNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    deepLink: ItemDeepLink? = null,
+    onDeepLinkConsumed: () -> Unit = {},
 ) {
     // Notes (a body present) open the editor; tasks/reminders/checklists open the detail
     // screen — see Item.isNote. Both screens are reached the same way from every list.
     val openItem: (Item) -> Unit = { item ->
         navController.navigate(if (item.isNote) Routes.editor(item.id) else Routes.detail(item.id))
+    }
+
+    // A tapped reminder notification's deep link — already know isNote (AlarmReceiver put it
+    // in the intent), so no need to load the item first just to pick a route.
+    LaunchedEffect(deepLink) {
+        deepLink?.let {
+            navController.navigate(if (it.isNote) Routes.editor(it.itemId) else Routes.detail(it.itemId))
+            onDeepLinkConsumed()
+        }
     }
 
     NavHost(navController = navController, startDestination = Routes.HOME, modifier = modifier) {

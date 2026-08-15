@@ -16,3 +16,7 @@ object Routes {
     fun detail(itemId: String) = "detail/$itemId"
     fun editor(itemId: String) = "editor/$itemId"
 }
+
+/** A notification tap arriving via [com.stackpointer.list.MainActivity]'s intent extras,
+ * naming which item to open and (since the route depends on it) whether it's a note. */
+data class ItemDeepLink(val itemId: String, val isNote: Boolean)

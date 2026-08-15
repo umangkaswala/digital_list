@@ -11,6 +11,7 @@ import com.stackpointer.list.domain.repository.ItemRepository
 import com.stackpointer.list.domain.repository.UndoAction
 import com.stackpointer.list.domain.repository.UndoToken
 import com.stackpointer.list.domain.usecase.RecurrenceNextOccurrence
+import com.stackpointer.list.notification.AlarmScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
@@ -23,6 +24,7 @@ import javax.inject.Singleton
 class ItemRepositoryImpl @Inject constructor(
     private val itemDao: ItemDao,
     private val recurrenceDao: RecurrenceDao,
+    private val alarmScheduler: AlarmScheduler,
 ) : ItemRepository {
 
     override fun observeSavedView(view: SavedView): Flow<List<Item>> {
@@ -62,6 +64,8 @@ class ItemRepositoryImpl @Inject constructor(
         if (item.collections.isNotEmpty()) {
             itemDao.insertItemCollections(item.collections.map { ItemCollectionCrossRef(item.id, it.id) })
         }
+
+        alarmScheduler.reschedule(item)
     }
 
     override suspend fun complete(id: String): UndoToken {
@@ -72,9 +76,12 @@ class ItemRepositoryImpl @Inject constructor(
             // A recurring item advances to its next occurrence rather than being marked done
             // for good — see DATA_MODEL.md's "Completing a recurring item" note.
             val next = RecurrenceNextOccurrence.next(previous.recurrence, previous.dueAt ?: now)
-            itemDao.upsertItem(previous.copy(dueAt = next, updatedAt = now).toEntity())
+            val updated = previous.copy(dueAt = next, updatedAt = now)
+            itemDao.upsertItem(updated.toEntity())
+            alarmScheduler.reschedule(updated)
         } else {
             itemDao.upsertItem(previous.copy(isCompleted = true, completedAt = now, updatedAt = now).toEntity())
+            alarmScheduler.cancel(id)
         }
         return UndoToken(previous, UndoAction.COMPLETE)
     }
@@ -82,12 +89,14 @@ class ItemRepositoryImpl @Inject constructor(
     override suspend fun delete(id: String): UndoToken {
         val previous = requireNotNull(itemDao.getItem(id)) { "No item with id $id" }.toDomain()
         itemDao.setDeletedAt(id, Instant.now().toEpochMilli(), Instant.now().toEpochMilli())
+        alarmScheduler.cancel(id)
         return UndoToken(previous, UndoAction.DELETE)
     }
 
     override suspend fun restore(id: String): UndoToken {
         val previous = requireNotNull(itemDao.getItem(id)) { "No item with id $id" }.toDomain()
         itemDao.setDeletedAt(id, null, Instant.now().toEpochMilli())
+        alarmScheduler.reschedule(previous.copy(deletedAt = null))
         return UndoToken(previous, UndoAction.DELETE)
     }
 
@@ -111,6 +120,7 @@ class ItemRepositoryImpl @Inject constructor(
         // The token already carries the full prior item state — including sortOrder and
         // whatever bucket it implies — so reverting is just writing it back.
         itemDao.upsertItem(token.previousState.toEntity())
+        alarmScheduler.reschedule(token.previousState)
     }
 
     private fun todayStartMillis(zone: ZoneId): Long =
