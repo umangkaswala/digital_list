@@ -30,8 +30,7 @@ private val OPTIONS = listOf(
     Triple(AlertType.INSISTENT, "Insistent", "Repeats until you respond"),
 )
 
-/** Screen 26 (alert-type half). "Set as default" isn't wired to Settings yet — that
- * DataStore-backed preference doesn't exist until M8. */
+/** Screen 26 (alert-type half). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlertTypeSheet(uiState: CaptureUiState, viewModel: CaptureViewModel) {
@@ -73,8 +72,7 @@ fun AlertTypeSheet(uiState: CaptureUiState, viewModel: CaptureViewModel) {
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            // TODO(M8): persist to the Settings DataStore once it exists.
-            TextButton(onClick = {}) { Text("Set as default") }
+            TextButton(onClick = { viewModel.setDefaultAlertType(selected) }) { Text("Set as default") }
             Button(onClick = { viewModel.setAlertType(selected) }) { Text("Done") }
         }
     }

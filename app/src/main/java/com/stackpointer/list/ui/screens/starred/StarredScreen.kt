@@ -6,19 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckBox
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Style
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -38,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.ui.components.EmptyState
+import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.UndoSnackbarHost
 import com.stackpointer.list.ui.components.showUndoSnackbar
@@ -49,6 +40,11 @@ import java.time.Instant
 fun StarredScreen(
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StarredViewModel = hiltViewModel(),
 ) {
@@ -65,6 +61,11 @@ fun StarredScreen(
         uiState = uiState,
         onBack = onBack,
         onOpenItem = onOpenItem,
+        onOpenSearch = onOpenSearch,
+        onOpenCollections = onOpenCollections,
+        onOpenTemplates = onOpenTemplates,
+        onOpenRecycleBin = onOpenRecycleBin,
+        onOpenSettings = onOpenSettings,
         onCompleteItem = viewModel::completeItem,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
@@ -77,6 +78,11 @@ private fun StarredContent(
     uiState: StarredUiState,
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     onCompleteItem: (String) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
@@ -94,12 +100,18 @@ private fun StarredContent(
                     }
                 },
                 actions = {
-                    // TODO(M8): navigate to the search screen once it exists.
-                    IconButton(onClick = {}) { Icon(Icons.Filled.Search, contentDescription = "Search") }
+                    IconButton(onClick = onOpenSearch) { Icon(Icons.Filled.Search, contentDescription = "Search") }
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = "More options")
                     }
-                    StarredOverflowMenu(expanded = menuExpanded, onDismiss = { menuExpanded = false })
+                    GlobalOverflowMenu(
+                        expanded = menuExpanded,
+                        onDismiss = { menuExpanded = false },
+                        onManageCollections = onOpenCollections,
+                        onTryTheseOut = onOpenTemplates,
+                        onRecycleBin = onOpenRecycleBin,
+                        onSettings = onOpenSettings,
+                    )
                 },
             )
         },
@@ -136,23 +148,6 @@ private fun StarredContent(
     }
 }
 
-// Screen 15's global overflow menu. Most rows open screens later milestones build (M8's
-// collections/recycle-bin/settings, the sort-by sheet, sync); they're TODO no-ops for now
-// rather than invented behaviour.
-@Composable
-private fun StarredOverflowMenu(expanded: Boolean, onDismiss: () -> Unit) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        DropdownMenuItem(text = { Text("Sync now") }, leadingIcon = { Icon(Icons.Filled.Sync, null) }, onClick = onDismiss)
-        DropdownMenuItem(text = { Text("Select") }, leadingIcon = { Icon(Icons.Filled.CheckBox, null) }, onClick = onDismiss)
-        DropdownMenuItem(text = { Text("Sort by") }, leadingIcon = { Icon(Icons.Filled.SwapVert, null) }, onClick = onDismiss)
-        DropdownMenuItem(text = { Text("Manage collections") }, leadingIcon = { Icon(Icons.Filled.Style, null) }, onClick = onDismiss)
-        DropdownMenuItem(text = { Text("Try these out") }, leadingIcon = { Icon(Icons.Filled.Lightbulb, null) }, onClick = onDismiss)
-        HorizontalDivider()
-        DropdownMenuItem(text = { Text("Recycle bin") }, leadingIcon = { Icon(Icons.Filled.Delete, null) }, onClick = onDismiss)
-        DropdownMenuItem(text = { Text("Settings") }, leadingIcon = { Icon(Icons.Filled.Settings, null) }, onClick = onDismiss)
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun StarredScreenPreview() {
@@ -161,6 +156,11 @@ private fun StarredScreenPreview() {
             uiState = StarredUiState(isLoading = false),
             onBack = {},
             onOpenItem = {},
+            onOpenSearch = {},
+            onOpenCollections = {},
+            onOpenTemplates = {},
+            onOpenRecycleBin = {},
+            onOpenSettings = {},
             onCompleteItem = {},
             snackbarHostState = remember { SnackbarHostState() },
         )

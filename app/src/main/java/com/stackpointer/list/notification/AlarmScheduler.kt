@@ -7,7 +7,9 @@ import android.content.Intent
 import android.util.Log
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.TriggerType
+import com.stackpointer.list.domain.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import java.time.LocalTime
 import java.time.ZoneId
 import javax.inject.Inject
@@ -15,20 +17,18 @@ import javax.inject.Singleton
 
 private const val TAG = "AlarmScheduler"
 
-// DATA_MODEL.md's default all-day alert time — the Settings row that overrides this doesn't
-// exist until M8's DataStore-backed settings screen.
-private val DEFAULT_ALL_DAY_ALERT_TIME: LocalTime = LocalTime.of(9, 0)
-
 /**
  * Schedules and cancels the `AlarmManager` alarms behind reminder notifications. Deliberately
  * has no dependency on [com.stackpointer.list.domain.repository.ItemRepository] — taking plain
  * [Item] lists/values as parameters instead — because [com.stackpointer.list.data.repository.ItemRepositoryImpl]
  * calls into this on every save, and depending on the repository interface back would make
- * Hilt's dependency graph circular.
+ * Hilt's dependency graph circular. [SettingsRepository] doesn't have that problem (nothing
+ * depends back on this class), so it's injected directly for the all-day alert time.
  */
 @Singleton
 class AlarmScheduler @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val settingsRepository: SettingsRepository,
 ) {
     private val alarmManager: AlarmManager
         get() = context.getSystemService(AlarmManager::class.java)
@@ -36,14 +36,16 @@ class AlarmScheduler @Inject constructor(
     /** Cancels any existing alarms for [item] and reschedules from its current state — the one
      * entry point [ItemRepositoryImpl] needs, since "does this still need an alarm" and "what
      * time" both potentially changed. */
-    fun reschedule(item: Item) {
+    suspend fun reschedule(item: Item) {
         cancel(item.id)
         if (!isEligible(item)) return
 
         val zone = ZoneId.systemDefault()
         val dueAt = item.dueAt ?: return
         val mainTriggerAt = if (item.isAllDay) {
-            dueAt.atZone(zone).toLocalDate().atTime(DEFAULT_ALL_DAY_ALERT_TIME).atZone(zone).toInstant()
+            val settings = settingsRepository.settings.first()
+            val allDayAlertTime = LocalTime.of(settings.allDayAlertHour, settings.allDayAlertMinute)
+            dueAt.atZone(zone).toLocalDate().atTime(allDayAlertTime).atZone(zone).toInstant()
         } else {
             dueAt
         }
@@ -72,8 +74,8 @@ class AlarmScheduler @Inject constructor(
     /** Called from [com.stackpointer.list.notification.BootReceiver] — exact alarms don't
      * survive a reboot (or a timezone change invalidates their trigger time), so every
      * still-relevant item needs a fresh alarm. */
-    fun rescheduleAll(items: List<Item>) {
-        items.filter(::isEligible).forEach(::reschedule)
+    suspend fun rescheduleAll(items: List<Item>) {
+        items.filter(::isEligible).forEach { reschedule(it) }
     }
 
     private fun isEligible(item: Item): Boolean =

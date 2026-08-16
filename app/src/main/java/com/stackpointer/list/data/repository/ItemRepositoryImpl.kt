@@ -54,6 +54,9 @@ class ItemRepositoryImpl @Inject constructor(
     override fun observeNotificationVisibleItems(): Flow<List<Item>> =
         itemDao.observeNotificationVisibleItems().map { list -> list.map { it.toDomain() } }
 
+    override fun search(query: String): Flow<List<Item>> =
+        itemDao.search(query).map { list -> list.map { it.toDomain() } }
+
     override suspend fun save(item: Item) {
         item.recurrence?.let { recurrenceDao.upsert(it.toEntity()) }
         itemDao.upsertItem(item.toEntity())
@@ -101,6 +104,10 @@ class ItemRepositoryImpl @Inject constructor(
         itemDao.setDeletedAt(id, null, Instant.now().toEpochMilli())
         alarmScheduler.reschedule(previous.copy(deletedAt = null))
         return UndoToken(previous, UndoAction.DELETE)
+    }
+
+    override suspend fun deleteForever(id: String) {
+        itemDao.deleteForeverById(id)
     }
 
     override suspend fun purgeDeletedBefore(cutoff: Instant) {

@@ -18,11 +18,13 @@ interface ItemRepository {
     fun observeItem(id: String): Flow<Item?>
     fun observeAll(): Flow<List<Item>>
     fun observeNotificationVisibleItems(): Flow<List<Item>>
+    fun search(query: String): Flow<List<Item>>
 
     suspend fun save(item: Item)
     suspend fun complete(id: String): UndoToken
     suspend fun delete(id: String): UndoToken
     suspend fun restore(id: String): UndoToken
+    suspend fun deleteForever(id: String)
     suspend fun purgeDeletedBefore(cutoff: java.time.Instant)
 
     suspend fun setStarred(id: String, starred: Boolean)

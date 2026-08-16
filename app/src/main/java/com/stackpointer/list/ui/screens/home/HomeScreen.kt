@@ -33,7 +33,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,6 +45,7 @@ import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.BucketLabel
 import com.stackpointer.list.ui.components.CaptureBar
 import com.stackpointer.list.ui.components.FloatingNavigationBar
+import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.NavDestination
 import com.stackpointer.list.ui.components.SectionHeader
@@ -65,6 +68,11 @@ fun HomeScreen(
     onOpenNoAlert: () -> Unit,
     onOpenCompleted: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
     captureViewModel: CaptureViewModel = hiltViewModel(),
@@ -87,6 +95,11 @@ fun HomeScreen(
         onOpenNoAlert = onOpenNoAlert,
         onOpenCompleted = onOpenCompleted,
         onOpenItem = onOpenItem,
+        onOpenSearch = onOpenSearch,
+        onOpenCollections = onOpenCollections,
+        onOpenTemplates = onOpenTemplates,
+        onOpenRecycleBin = onOpenRecycleBin,
+        onOpenSettings = onOpenSettings,
         onCompleteItem = viewModel::completeItem,
         onOpenCapture = { captureViewModel.openFor(CapturePrefill.NONE) },
         snackbarHostState = snackbarHostState,
@@ -105,6 +118,11 @@ private fun HomeContent(
     onOpenNoAlert: () -> Unit,
     onOpenCompleted: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     onCompleteItem: (String) -> Unit,
     onOpenCapture: () -> Unit,
     snackbarHostState: SnackbarHostState,
@@ -122,7 +140,16 @@ private fun HomeContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 160.dp),
             ) {
-                item { DockedSearchBar(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
+                item {
+                    DockedSearchBar(
+                        onOpenSearch = onOpenSearch,
+                        onOpenCollections = onOpenCollections,
+                        onOpenTemplates = onOpenTemplates,
+                        onOpenRecycleBin = onOpenRecycleBin,
+                        onOpenSettings = onOpenSettings,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
 
                 item {
                     TileGrid(
@@ -180,8 +207,14 @@ private fun HomeContent(
                 )
                 FloatingNavigationBar(
                     selected = NavDestination.HOME,
-                    // TODO(M8): Tasks/Collections destinations aren't built yet.
-                    onSelect = {},
+                    onSelect = { destination ->
+                        when (destination) {
+                            NavDestination.HOME -> Unit
+                            // TODO: no Tasks screen in CLAUDE.md's target ui/screens list — stays unwired.
+                            NavDestination.TASKS -> Unit
+                            NavDestination.COLLECTIONS -> onOpenCollections()
+                        }
+                    },
                 )
             }
         }
@@ -263,10 +296,18 @@ private fun TileGrid(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DockedSearchBar(modifier: Modifier = Modifier) {
+private fun DockedSearchBar(
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var overflowOpen by remember { mutableStateOf(false) }
+
     Surface(
-        // TODO(M8): navigate to the search screen once it exists.
-        onClick = {},
+        onClick = onOpenSearch,
         modifier = modifier.fillMaxWidth().height(56.dp),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -286,8 +327,18 @@ private fun DockedSearchBar(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f).padding(start = 12.dp),
             )
-            IconButton(onClick = {}) {
-                Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "More options")
+            Box {
+                IconButton(onClick = { overflowOpen = true }) {
+                    Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "More options")
+                }
+                GlobalOverflowMenu(
+                    expanded = overflowOpen,
+                    onDismiss = { overflowOpen = false },
+                    onManageCollections = onOpenCollections,
+                    onTryTheseOut = onOpenTemplates,
+                    onRecycleBin = onOpenRecycleBin,
+                    onSettings = onOpenSettings,
+                )
             }
         }
     }
@@ -327,6 +378,11 @@ private fun HomeScreenPreview() {
             onOpenNoAlert = {},
             onOpenCompleted = {},
             onOpenItem = {},
+            onOpenSearch = {},
+            onOpenCollections = {},
+            onOpenTemplates = {},
+            onOpenRecycleBin = {},
+            onOpenSettings = {},
             onCompleteItem = {},
             onOpenCapture = {},
             snackbarHostState = remember { SnackbarHostState() },

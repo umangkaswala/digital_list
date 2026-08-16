@@ -8,8 +8,10 @@ import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.Recurrence
 import com.stackpointer.list.domain.model.SubItem
 import com.stackpointer.list.domain.model.TriggerType
+import com.stackpointer.list.domain.model.Settings
 import com.stackpointer.list.domain.repository.CollectionRepository
 import com.stackpointer.list.domain.repository.ItemRepository
+import com.stackpointer.list.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,16 +29,24 @@ import javax.inject.Inject
 class CaptureViewModel @Inject constructor(
     private val itemRepository: ItemRepository,
     private val collectionRepository: CollectionRepository,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CaptureUiState())
     val uiState: StateFlow<CaptureUiState> = _uiState.asStateFlow()
+
+    // Read for a fresh draft's initial alertType (openFor) — kept as local state rather than
+    // read fresh each time, since openFor is called from a plain onClick, not a coroutine.
+    private var currentSettings = Settings()
 
     init {
         viewModelScope.launch {
             collectionRepository.observeAll().collect { collections ->
                 _uiState.update { it.copy(allCollections = collections) }
             }
+        }
+        viewModelScope.launch {
+            settingsRepository.settings.collect { currentSettings = it }
         }
     }
 
@@ -45,14 +55,15 @@ class CaptureViewModel @Inject constructor(
      * ViewModel is scoped to the hosting screen, not to each open/close cycle. */
     fun openFor(prefill: CapturePrefill) {
         val zone = ZoneId.systemDefault()
+        val blankDraft = Item.draft().copy(alertType = currentSettings.defaultAlertType)
         val draft = when (prefill) {
-            CapturePrefill.NONE -> Item.draft()
-            CapturePrefill.TODAY -> Item.draft().copy(
+            CapturePrefill.NONE -> blankDraft
+            CapturePrefill.TODAY -> blankDraft.copy(
                 triggerType = TriggerType.TIME,
                 dueAt = LocalDate.now(zone).atTime(9, 0).atZone(zone).toInstant(),
             )
-            CapturePrefill.SCHEDULED -> Item.draft().copy(triggerType = TriggerType.TIME)
-            CapturePrefill.PLACE -> Item.draft().copy(triggerType = TriggerType.PLACE)
+            CapturePrefill.SCHEDULED -> blankDraft.copy(triggerType = TriggerType.TIME)
+            CapturePrefill.PLACE -> blankDraft.copy(triggerType = TriggerType.PLACE)
         }
         val mode = when (prefill) {
             CapturePrefill.NONE -> CaptureMode.NONE
@@ -70,6 +81,14 @@ class CaptureViewModel @Inject constructor(
     fun openForExisting(item: Item, mode: CaptureMode) {
         _uiState.update {
             CaptureUiState(isOpen = true, draft = item, isPersisted = true, mode = mode, allCollections = it.allCollections)
+        }
+    }
+
+    /** Opens the sheet prefilled from a template (screen 28, tapping a card rather than its
+     * trailing `add`) — not yet in Room, so [isPersisted] is false like a fresh [openFor] draft. */
+    fun openWithDraft(draft: Item, mode: CaptureMode) {
+        _uiState.update {
+            CaptureUiState(isOpen = true, draft = draft, isPersisted = false, mode = mode, allCollections = it.allCollections)
         }
     }
 
@@ -122,6 +141,12 @@ class CaptureViewModel @Inject constructor(
     fun setAlertType(alertType: AlertType) {
         updateDraft { it.copy(alertType = alertType) }
         dismissAlertTypeSheet()
+    }
+
+    /** Screen 26's "Set as default" — a shortcut to the same Settings-screen preference,
+     * without leaving the sheet. */
+    fun setDefaultAlertType(alertType: AlertType) {
+        viewModelScope.launch { settingsRepository.setDefaultAlertType(alertType) }
     }
 
     fun openEarlyAlertMenu() = _uiState.update { it.copy(earlyAlertMenuOpen = true) }

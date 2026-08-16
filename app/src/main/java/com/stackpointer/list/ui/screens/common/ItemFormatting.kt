@@ -28,6 +28,10 @@ object ItemFormatting {
     fun fullDate(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): String =
         instant.atZone(zone).format(fullDateFormatter)
 
+    /** "12 Aug" — screen 29's "deleted 12 Aug" rows. */
+    fun shortDate(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): String =
+        instant.atZone(zone).format(monthDayFormatter)
+
     fun dueText(dueAt: Instant, now: Instant, zone: ZoneId = ZoneId.systemDefault()): String {
         val due = dueAt.atZone(zone)
         val today = now.atZone(zone).toLocalDate()

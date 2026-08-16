@@ -9,6 +9,11 @@ object Routes {
     const val STARRED = "starred"
     const val NO_ALERT = "no_alert"
     const val COMPLETED = "completed"
+    const val SEARCH = "search"
+    const val COLLECTIONS = "collections"
+    const val TEMPLATES = "templates"
+    const val RECYCLE_BIN = "recycle_bin"
+    const val SETTINGS = "settings"
 
     const val DETAIL_PATTERN = "detail/{itemId}"
     const val EDITOR_PATTERN = "editor/{itemId}"

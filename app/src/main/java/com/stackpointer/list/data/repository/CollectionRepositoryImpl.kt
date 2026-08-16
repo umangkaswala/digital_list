@@ -6,6 +6,7 @@ import com.stackpointer.list.data.local.entity.ItemCollectionCrossRef
 import com.stackpointer.list.data.local.mapper.toDomain
 import com.stackpointer.list.data.local.mapper.toEntity
 import com.stackpointer.list.domain.model.Collection
+import com.stackpointer.list.domain.model.CollectionSummary
 import com.stackpointer.list.domain.repository.CollectionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -20,6 +21,11 @@ class CollectionRepositoryImpl @Inject constructor(
 
     override fun observeAll(): Flow<List<Collection>> =
         collectionDao.observeAll().map { list -> list.map { it.toDomain() } }
+
+    override fun observeAllWithCounts(): Flow<List<CollectionSummary>> =
+        collectionDao.observeAllWithCounts().map { list ->
+            list.map { CollectionSummary(it.collection.toDomain(), it.itemCount, it.dueCount) }
+        }
 
     override suspend fun save(collection: Collection) {
         collectionDao.upsert(collection.toEntity())

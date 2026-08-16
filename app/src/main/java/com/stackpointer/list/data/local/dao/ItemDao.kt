@@ -69,6 +69,13 @@ interface ItemDao {
     @Query("SELECT * FROM items WHERE deletedAt IS NULL AND (isShownInNotificationBar = 1 OR isPinnedToNotification = 1)")
     fun observeNotificationVisibleItems(): Flow<List<ItemWithDetails>>
 
+    /** Screen 06 — matches title or body, case-insensitively via SQLite's default `LIKE`
+     * collation. Scope chips (Notes/Tasks/Archive) filter this result set in the repository,
+     * not here — see [com.stackpointer.list.data.repository.ItemRepositoryImpl.search]. */
+    @Transaction
+    @Query("SELECT * FROM items WHERE deletedAt IS NULL AND (title LIKE '%' || :query || '%' OR body LIKE '%' || :query || '%')")
+    fun search(query: String): Flow<List<ItemWithDetails>>
+
     @Upsert
     suspend fun upsertItem(item: ItemEntity)
 
@@ -107,6 +114,10 @@ interface ItemDao {
 
     @Delete
     suspend fun deleteItem(item: ItemEntity)
+
+    /** Screen 29's "Delete now" — a single already-soft-deleted item, not the 30-day sweep. */
+    @Query("DELETE FROM items WHERE id = :id")
+    suspend fun deleteForeverById(id: String)
 
     @Query("SELECT * FROM items WHERE deletedAt IS NOT NULL AND deletedAt < :cutoff")
     suspend fun getDeletedBefore(cutoff: Long): List<ItemEntity>

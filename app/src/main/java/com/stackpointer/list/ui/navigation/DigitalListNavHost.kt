@@ -10,13 +10,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.stackpointer.list.domain.model.Item
+import com.stackpointer.list.ui.screens.bin.BinScreen
+import com.stackpointer.list.ui.screens.collections.CollectionsScreen
 import com.stackpointer.list.ui.screens.completed.CompletedScreen
 import com.stackpointer.list.ui.screens.detail.DetailScreen
 import com.stackpointer.list.ui.screens.editor.EditorScreen
 import com.stackpointer.list.ui.screens.home.HomeScreen
 import com.stackpointer.list.ui.screens.noalert.NoAlertScreen
 import com.stackpointer.list.ui.screens.scheduled.ScheduledScreen
+import com.stackpointer.list.ui.screens.search.SearchScreen
+import com.stackpointer.list.ui.screens.settings.SettingsScreen
 import com.stackpointer.list.ui.screens.starred.StarredScreen
+import com.stackpointer.list.ui.screens.templates.TemplatesScreen
 import com.stackpointer.list.ui.screens.today.TodayScreen
 
 @Composable
@@ -52,6 +57,11 @@ fun DigitalListNavHost(
                 onOpenNoAlert = { navController.navigate(Routes.NO_ALERT) },
                 onOpenCompleted = { navController.navigate(Routes.COMPLETED) },
                 onOpenItem = openItem,
+                onOpenSearch = { navController.navigate(Routes.SEARCH) },
+                onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
+                onOpenTemplates = { navController.navigate(Routes.TEMPLATES) },
+                onOpenRecycleBin = { navController.navigate(Routes.RECYCLE_BIN) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
         composable(Routes.TODAY) {
@@ -61,13 +71,39 @@ fun DigitalListNavHost(
             ScheduledScreen(onBack = navController::popBackStack, onOpenItem = openItem)
         }
         composable(Routes.STARRED) {
-            StarredScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+            StarredScreen(
+                onBack = navController::popBackStack,
+                onOpenItem = openItem,
+                onOpenSearch = { navController.navigate(Routes.SEARCH) },
+                onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
+                onOpenTemplates = { navController.navigate(Routes.TEMPLATES) },
+                onOpenRecycleBin = { navController.navigate(Routes.RECYCLE_BIN) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+            )
         }
         composable(Routes.NO_ALERT) {
             NoAlertScreen(onBack = navController::popBackStack, onOpenItem = openItem)
         }
         composable(Routes.COMPLETED) {
             CompletedScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+        }
+        composable(Routes.SEARCH) {
+            SearchScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+        }
+        composable(Routes.COLLECTIONS) {
+            CollectionsScreen(onBack = navController::popBackStack)
+        }
+        composable(Routes.TEMPLATES) {
+            TemplatesScreen(onBack = navController::popBackStack)
+        }
+        composable(Routes.RECYCLE_BIN) {
+            BinScreen(onBack = navController::popBackStack)
+        }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                onBack = navController::popBackStack,
+                onOpenRecycleBin = { navController.navigate(Routes.RECYCLE_BIN) },
+            )
         }
         composable(
             route = Routes.DETAIL_PATTERN,
