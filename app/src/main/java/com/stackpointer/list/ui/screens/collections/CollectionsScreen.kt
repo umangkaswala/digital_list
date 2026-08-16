@@ -104,6 +104,7 @@ private fun CollectionsContent(
                         summary = summary,
                         onRename = { renameTarget = summary.collection },
                         onDelete = { onDelete(summary.collection.id) },
+                        modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                     )
                 }
                 item {
@@ -151,12 +152,17 @@ private fun CollectionsContent(
 }
 
 @Composable
-private fun CollectionRow(summary: CollectionSummary, onRename: () -> Unit, onDelete: () -> Unit) {
+private fun CollectionRow(
+    summary: CollectionSummary,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var overflowOpen by remember { mutableStateOf(false) }
     val collection = summary.collection
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth().height(64.dp).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.ui.components.EmptyState
+import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
 import com.stackpointer.list.ui.components.SelectionTopBar
 import com.stackpointer.list.ui.screens.common.ItemFormatting
 import com.stackpointer.list.ui.theme.DigitalListTheme
@@ -130,6 +131,7 @@ private fun BinContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
+            ExpressivePullToRefreshBox(modifier = Modifier.fillMaxSize()) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 uiState.grouped.forEach { (daysLeft, rows) ->
                     item(key = "header-$daysLeft") {
@@ -146,10 +148,13 @@ private fun BinContent(
                             isSelected = row.item.id in uiState.selectedIds,
                             isSelectionMode = uiState.isSelectionMode,
                             onToggleSelected = { onToggleSelected(row.item.id) },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                         )
                     }
                 }
+            }
             }
         }
     }

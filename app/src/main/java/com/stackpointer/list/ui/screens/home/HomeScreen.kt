@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,12 +38,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.BucketLabel
 import com.stackpointer.list.ui.components.CaptureBar
+import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
 import com.stackpointer.list.ui.components.FloatingNavigationBar
 import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
@@ -136,6 +138,7 @@ private fun HomeContent(
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             val now = Instant.now()
 
+            ExpressivePullToRefreshBox(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 160.dp),
@@ -188,10 +191,13 @@ private fun HomeContent(
                             isOverdue = bucket.label == BucketLabel.PAST,
                             onClick = { onOpenItem(item) },
                             onToggleComplete = { onCompleteItem(item.id) },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                         )
                     }
                 }
+            }
             }
 
             Column(
@@ -308,12 +314,14 @@ private fun DockedSearchBar(
 
     Surface(
         onClick = onOpenSearch,
-        modifier = modifier.fillMaxWidth().height(56.dp),
+        // A minimum, not a fixed height — at large font scales the row needs more vertical
+        // room than 56dp even with a single-line, ellipsized placeholder.
+        modifier = modifier.fillMaxWidth().heightIn(min = 56.dp),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -325,6 +333,8 @@ private fun DockedSearchBar(
                 text = "Search notes and tasks",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f).padding(start = 12.dp),
             )
             Box {

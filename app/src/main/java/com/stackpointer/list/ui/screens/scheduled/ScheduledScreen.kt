@@ -8,10 +8,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -31,6 +33,8 @@ import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.BucketLabel
 import com.stackpointer.list.ui.components.CaptureBar
 import com.stackpointer.list.ui.components.EmptyState
+import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
+import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.SectionHeader
 import com.stackpointer.list.ui.components.UndoSnackbarHost
@@ -47,6 +51,11 @@ import java.time.Instant
 fun ScheduledScreen(
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ScheduledViewModel = hiltViewModel(),
     captureViewModel: CaptureViewModel = hiltViewModel(),
@@ -65,6 +74,11 @@ fun ScheduledScreen(
         uiState = uiState,
         onBack = onBack,
         onOpenItem = onOpenItem,
+        onOpenSearch = onOpenSearch,
+        onOpenCollections = onOpenCollections,
+        onOpenTemplates = onOpenTemplates,
+        onOpenRecycleBin = onOpenRecycleBin,
+        onOpenSettings = onOpenSettings,
         onCompleteItem = viewModel::completeItem,
         onOpenCapture = { captureViewModel.openFor(CapturePrefill.SCHEDULED) },
         onOpenSort = { sortSheetOpen = true },
@@ -90,12 +104,19 @@ private fun ScheduledContent(
     uiState: ScheduledUiState,
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     onCompleteItem: (String) -> Unit,
     onOpenCapture: () -> Unit,
     onOpenSort: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -107,8 +128,19 @@ private fun ScheduledContent(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onOpenSearch) { Icon(Icons.Filled.Search, contentDescription = "Search") }
                     IconButton(onClick = onOpenSort) { Icon(Icons.Filled.SwapVert, contentDescription = "Sort by") }
-                    IconButton(onClick = {}) { Icon(Icons.Filled.MoreVert, contentDescription = "More options") }
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                    }
+                    GlobalOverflowMenu(
+                        expanded = menuExpanded,
+                        onDismiss = { menuExpanded = false },
+                        onManageCollections = onOpenCollections,
+                        onTryTheseOut = onOpenTemplates,
+                        onRecycleBin = onOpenRecycleBin,
+                        onSettings = onOpenSettings,
+                    )
                 },
             )
         },
@@ -134,7 +166,8 @@ private fun ScheduledContent(
         }
 
         val now = Instant.now()
-        LazyColumn(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        ExpressivePullToRefreshBox(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             uiState.buckets.forEach { bucket ->
                 item(key = "header-${bucket.label}") {
                     SectionHeader(
@@ -159,11 +192,14 @@ private fun ScheduledContent(
                         isOverdue = bucket.label == BucketLabel.PAST,
                         onClick = { onOpenItem(item) },
                         onToggleComplete = { onCompleteItem(item.id) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                     )
                 }
             }
             item { androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 88.dp)) }
+        }
         }
     }
 }
@@ -184,6 +220,11 @@ private fun ScheduledScreenPreview() {
             uiState = ScheduledUiState(isLoading = false),
             onBack = {},
             onOpenItem = {},
+            onOpenSearch = {},
+            onOpenCollections = {},
+            onOpenTemplates = {},
+            onOpenRecycleBin = {},
+            onOpenSettings = {},
             onCompleteItem = {},
             onOpenCapture = {},
             onOpenSort = {},

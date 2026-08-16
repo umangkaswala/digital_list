@@ -128,7 +128,11 @@ private fun EditorContent(
                         )
                     }
                     IconButton(onClick = {}) {
-                        Icon(Icons.Filled.Notifications, contentDescription = null)
+                        // Undocumented in the handoff and left inert (see this file's class
+                        // doc) — but a TalkBack user still lands on this control, so it gets a
+                        // literal, non-inventive label describing what's visually shown rather
+                        // than staying unlabeled.
+                        Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
                     }
                     IconButton(onClick = { overflowMenuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = "More options")

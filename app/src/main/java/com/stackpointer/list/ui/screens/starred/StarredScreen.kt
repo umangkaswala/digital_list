@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.ui.components.EmptyState
+import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
 import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.UndoSnackbarHost
@@ -130,7 +132,8 @@ private fun StarredContent(
         }
 
         val now = Instant.now()
-        LazyColumn(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        ExpressivePullToRefreshBox(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(uiState.items, key = { it.id }) { item ->
                 ItemRow(
                     title = item.title,
@@ -141,9 +144,12 @@ private fun StarredContent(
                     isStarred = item.isStarred,
                     onClick = { onOpenItem(item) },
                     onToggleComplete = { onCompleteItem(item.id) },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                 )
             }
+        }
         }
     }
 }

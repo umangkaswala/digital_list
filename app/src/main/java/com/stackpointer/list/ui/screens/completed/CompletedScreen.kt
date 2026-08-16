@@ -28,6 +28,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.BucketLabel
 import com.stackpointer.list.ui.components.EmptyState
+import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.SectionHeader
 import com.stackpointer.list.ui.components.UndoSnackbarHost
@@ -91,7 +92,8 @@ private fun CompletedContent(
             return@Scaffold
         }
 
-        LazyColumn(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        ExpressivePullToRefreshBox(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             uiState.buckets.forEach { bucket ->
                 item(key = "header-${bucket.label}") {
                     SectionHeader(
@@ -114,10 +116,13 @@ private fun CompletedContent(
                                 Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Restore ${item.title}")
                             }
                         },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                     )
                 }
             }
+        }
         }
     }
 }

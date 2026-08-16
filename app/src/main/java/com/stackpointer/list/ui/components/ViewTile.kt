@@ -3,7 +3,7 @@ package com.stackpointer.list.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Today
@@ -33,7 +33,9 @@ fun ViewTile(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(76.dp),
+        // A minimum, not a fixed height — screen 11 specs 76dp, but at large font scales the
+        // label+count row needs more room than that to avoid clipping wrapped text.
+        modifier = modifier.heightIn(min = 76.dp),
         shape = MaterialTheme.shapes.large,
         color = containerColor,
         contentColor = contentColor,

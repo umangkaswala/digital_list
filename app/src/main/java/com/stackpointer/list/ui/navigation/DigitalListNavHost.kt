@@ -37,6 +37,15 @@ fun DigitalListNavHost(
         navController.navigate(if (item.isNote) Routes.editor(item.id) else Routes.detail(item.id))
     }
 
+    // Screen 15's global overflow menu destinations — shared across every saved-view screen
+    // that has one, so each composable() block below just spreads this instead of repeating
+    // the same five lambdas.
+    val onOpenSearch: () -> Unit = { navController.navigate(Routes.SEARCH) }
+    val onOpenCollections: () -> Unit = { navController.navigate(Routes.COLLECTIONS) }
+    val onOpenTemplates: () -> Unit = { navController.navigate(Routes.TEMPLATES) }
+    val onOpenRecycleBin: () -> Unit = { navController.navigate(Routes.RECYCLE_BIN) }
+    val onOpenSettings: () -> Unit = { navController.navigate(Routes.SETTINGS) }
+
     // A tapped reminder notification's deep link — already know isNote (AlarmReceiver put it
     // in the intent), so no need to load the item first just to pick a route.
     LaunchedEffect(deepLink) {
@@ -57,32 +66,56 @@ fun DigitalListNavHost(
                 onOpenNoAlert = { navController.navigate(Routes.NO_ALERT) },
                 onOpenCompleted = { navController.navigate(Routes.COMPLETED) },
                 onOpenItem = openItem,
-                onOpenSearch = { navController.navigate(Routes.SEARCH) },
-                onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
-                onOpenTemplates = { navController.navigate(Routes.TEMPLATES) },
-                onOpenRecycleBin = { navController.navigate(Routes.RECYCLE_BIN) },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenSearch = onOpenSearch,
+                onOpenCollections = onOpenCollections,
+                onOpenTemplates = onOpenTemplates,
+                onOpenRecycleBin = onOpenRecycleBin,
+                onOpenSettings = onOpenSettings,
             )
         }
         composable(Routes.TODAY) {
-            TodayScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+            TodayScreen(
+                onBack = navController::popBackStack,
+                onOpenItem = openItem,
+                onOpenSearch = onOpenSearch,
+                onOpenCollections = onOpenCollections,
+                onOpenTemplates = onOpenTemplates,
+                onOpenRecycleBin = onOpenRecycleBin,
+                onOpenSettings = onOpenSettings,
+            )
         }
         composable(Routes.SCHEDULED) {
-            ScheduledScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+            ScheduledScreen(
+                onBack = navController::popBackStack,
+                onOpenItem = openItem,
+                onOpenSearch = onOpenSearch,
+                onOpenCollections = onOpenCollections,
+                onOpenTemplates = onOpenTemplates,
+                onOpenRecycleBin = onOpenRecycleBin,
+                onOpenSettings = onOpenSettings,
+            )
         }
         composable(Routes.STARRED) {
             StarredScreen(
                 onBack = navController::popBackStack,
                 onOpenItem = openItem,
-                onOpenSearch = { navController.navigate(Routes.SEARCH) },
-                onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
-                onOpenTemplates = { navController.navigate(Routes.TEMPLATES) },
-                onOpenRecycleBin = { navController.navigate(Routes.RECYCLE_BIN) },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenSearch = onOpenSearch,
+                onOpenCollections = onOpenCollections,
+                onOpenTemplates = onOpenTemplates,
+                onOpenRecycleBin = onOpenRecycleBin,
+                onOpenSettings = onOpenSettings,
             )
         }
         composable(Routes.NO_ALERT) {
-            NoAlertScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+            NoAlertScreen(
+                onBack = navController::popBackStack,
+                onOpenItem = openItem,
+                onOpenSearch = onOpenSearch,
+                onOpenCollections = onOpenCollections,
+                onOpenTemplates = onOpenTemplates,
+                onOpenRecycleBin = onOpenRecycleBin,
+                onOpenSettings = onOpenSettings,
+            )
         }
         composable(Routes.COMPLETED) {
             CompletedScreen(onBack = navController::popBackStack, onOpenItem = openItem)
@@ -102,7 +135,7 @@ fun DigitalListNavHost(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = navController::popBackStack,
-                onOpenRecycleBin = { navController.navigate(Routes.RECYCLE_BIN) },
+                onOpenRecycleBin = onOpenRecycleBin,
             )
         }
         composable(

@@ -98,7 +98,9 @@ private fun TemplatesContent(
                     template = template,
                     onTap = { onCardTap(template) },
                     onApply = { onApply(template) },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                 )
             }
         }

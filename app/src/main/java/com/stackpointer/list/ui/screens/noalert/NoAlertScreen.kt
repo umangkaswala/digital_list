@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AlarmAdd
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,7 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,6 +40,8 @@ import com.stackpointer.list.domain.model.Template
 import com.stackpointer.list.domain.model.TemplateDraft
 import com.stackpointer.list.ui.components.CaptureBar
 import com.stackpointer.list.ui.components.EmptyState
+import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
+import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.UndoSnackbarHost
 import com.stackpointer.list.ui.components.showUndoSnackbar
@@ -52,6 +57,11 @@ import java.time.Instant
 fun NoAlertScreen(
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NoAlertViewModel = hiltViewModel(),
     captureViewModel: CaptureViewModel = hiltViewModel(),
@@ -69,6 +79,11 @@ fun NoAlertScreen(
         uiState = uiState,
         onBack = onBack,
         onOpenItem = onOpenItem,
+        onOpenSearch = onOpenSearch,
+        onOpenCollections = onOpenCollections,
+        onOpenTemplates = onOpenTemplates,
+        onOpenRecycleBin = onOpenRecycleBin,
+        onOpenSettings = onOpenSettings,
         onOpenCapture = { captureViewModel.openFor(CapturePrefill.NONE) },
         onAddTime = { item -> captureViewModel.openForExisting(item, CaptureMode.TIME) },
         onCommitTemplate = viewModel::commitTemplate,
@@ -85,6 +100,11 @@ private fun NoAlertContent(
     uiState: NoAlertUiState,
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     onOpenCapture: () -> Unit,
     onAddTime: (Item) -> Unit,
     onCommitTemplate: (TemplateDraft) -> Unit,
@@ -92,6 +112,8 @@ private fun NoAlertContent(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -103,7 +125,18 @@ private fun NoAlertContent(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Filled.MoreVert, contentDescription = "More options") }
+                    IconButton(onClick = onOpenSearch) { Icon(Icons.Filled.Search, contentDescription = "Search") }
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                    }
+                    GlobalOverflowMenu(
+                        expanded = menuExpanded,
+                        onDismiss = { menuExpanded = false },
+                        onManageCollections = onOpenCollections,
+                        onTryTheseOut = onOpenTemplates,
+                        onRecycleBin = onOpenRecycleBin,
+                        onSettings = onOpenSettings,
+                    )
                 },
             )
         },
@@ -129,7 +162,8 @@ private fun NoAlertContent(
         }
 
         val now = Instant.now()
-        LazyColumn(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        ExpressivePullToRefreshBox(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
                 Text(
                     text = "Nothing here will alert you. Add a time or a place when you want one to.",
@@ -155,25 +189,33 @@ private fun NoAlertContent(
                             colors = AssistChipDefaults.assistChipColors(),
                         )
                     },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                 )
             }
             uiState.previewTemplate?.let { template ->
-                item { TryTheseOutFooter(template = template, onCommit = { onCommitTemplate(template.draft) }) }
+                item {
+                    TryTheseOutFooter(
+                        template = template,
+                        onCommit = { onCommitTemplate(template.draft) },
+                        onOpenTemplates = onOpenTemplates,
+                    )
+                }
             }
             item { androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 88.dp)) }
+        }
         }
     }
 }
 
 @Composable
-private fun TryTheseOutFooter(template: Template, onCommit: () -> Unit, modifier: Modifier = Modifier) {
+private fun TryTheseOutFooter(template: Template, onCommit: () -> Unit, onOpenTemplates: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.large,
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        // TODO(M8): open the full "Try these out" screen (28).
-        onClick = {},
+        onClick = onOpenTemplates,
     ) {
         androidx.compose.foundation.layout.Row(
             modifier = Modifier.padding(16.dp),
@@ -203,6 +245,11 @@ private fun NoAlertScreenPreview() {
             uiState = NoAlertUiState(isLoading = false),
             onBack = {},
             onOpenItem = {},
+            onOpenSearch = {},
+            onOpenCollections = {},
+            onOpenTemplates = {},
+            onOpenRecycleBin = {},
+            onOpenSettings = {},
             onOpenCapture = {},
             onAddTime = {},
             onCommitTemplate = {},

@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -49,6 +51,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -109,7 +112,7 @@ private fun SearchContent(
                     TextField(
                         value = uiState.query,
                         onValueChange = onQueryChange,
-                        placeholder = { Text("Search notes and tasks") },
+                        placeholder = { Text("Search notes and tasks", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color.Transparent,
@@ -147,7 +150,10 @@ private fun SearchContent(
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 ScopeChip("Everything", uiState.scope == SearchScope.EVERYTHING) { onScopeSelect(SearchScope.EVERYTHING) }
                 ScopeChip("Notes", uiState.scope == SearchScope.NOTES) { onScopeSelect(SearchScope.NOTES) }
@@ -182,7 +188,9 @@ private fun SearchContent(
                             item = item,
                             query = uiState.query,
                             onClick = { onOpenItem(item) },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                         )
                     }
                 }

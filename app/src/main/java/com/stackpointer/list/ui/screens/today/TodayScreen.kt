@@ -21,7 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,8 @@ import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.BucketLabel
 import com.stackpointer.list.ui.components.CaptureBar
 import com.stackpointer.list.ui.components.EmptyState
+import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
+import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.SectionHeader
 import com.stackpointer.list.ui.components.UndoSnackbarHost
@@ -45,6 +49,11 @@ import java.time.Instant
 fun TodayScreen(
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TodayViewModel = hiltViewModel(),
     captureViewModel: CaptureViewModel = hiltViewModel(),
@@ -62,6 +71,11 @@ fun TodayScreen(
         uiState = uiState,
         onBack = onBack,
         onOpenItem = onOpenItem,
+        onOpenSearch = onOpenSearch,
+        onOpenCollections = onOpenCollections,
+        onOpenTemplates = onOpenTemplates,
+        onOpenRecycleBin = onOpenRecycleBin,
+        onOpenSettings = onOpenSettings,
         onCompleteItem = viewModel::completeItem,
         onOpenCapture = { captureViewModel.openFor(CapturePrefill.TODAY) },
         snackbarHostState = snackbarHostState,
@@ -76,11 +90,18 @@ private fun TodayContent(
     uiState: TodayUiState,
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenCollections: () -> Unit,
+    onOpenTemplates: () -> Unit,
+    onOpenRecycleBin: () -> Unit,
+    onOpenSettings: () -> Unit,
     onCompleteItem: (String) -> Unit,
     onOpenCapture: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -92,9 +113,18 @@ private fun TodayContent(
                     }
                 },
                 actions = {
-                    // TODO(M8): navigate to the search screen once it exists.
-                    IconButton(onClick = {}) { Icon(Icons.Filled.Search, contentDescription = "Search") }
-                    IconButton(onClick = {}) { Icon(Icons.Filled.MoreVert, contentDescription = "More options") }
+                    IconButton(onClick = onOpenSearch) { Icon(Icons.Filled.Search, contentDescription = "Search") }
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                    }
+                    GlobalOverflowMenu(
+                        expanded = menuExpanded,
+                        onDismiss = { menuExpanded = false },
+                        onManageCollections = onOpenCollections,
+                        onTryTheseOut = onOpenTemplates,
+                        onRecycleBin = onOpenRecycleBin,
+                        onSettings = onOpenSettings,
+                    )
                 },
             )
         },
@@ -120,7 +150,8 @@ private fun TodayContent(
         }
 
         val now = Instant.now()
-        LazyColumn(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        ExpressivePullToRefreshBox(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
                 Text(
                     text = "Today",
@@ -160,11 +191,14 @@ private fun TodayContent(
                         isOverdue = bucket.label == BucketLabel.PAST,
                         onClick = { onOpenItem(item) },
                         onToggleComplete = { onCompleteItem(item.id) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                     )
                 }
             }
             item { androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 88.dp)) }
+        }
         }
     }
 }
@@ -184,6 +218,11 @@ private fun TodayScreenPreview() {
             uiState = TodayUiState(isLoading = false, doneCount = 1, totalCount = 5),
             onBack = {},
             onOpenItem = {},
+            onOpenSearch = {},
+            onOpenCollections = {},
+            onOpenTemplates = {},
+            onOpenRecycleBin = {},
+            onOpenSettings = {},
             onCompleteItem = {},
             onOpenCapture = {},
             snackbarHostState = remember { SnackbarHostState() },
