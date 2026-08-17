@@ -1,9 +1,11 @@
 package com.stackpointer.list.ui.components
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +36,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.stackpointer.list.ui.navigation.LocalNavAnimatedContentScope
+import com.stackpointer.list.ui.navigation.LocalSharedTransitionScope
 import com.stackpointer.list.ui.theme.DigitalListTheme
 
 /**
@@ -41,6 +45,7 @@ import com.stackpointer.list.ui.theme.DigitalListTheme
  * pass already-formatted text — date/recurrence/overdue wording is a screen-level concern, not
  * this component's, per CLAUDE.md's "composables take data and lambdas" rule.
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ItemRow(
     title: String,
@@ -55,19 +60,62 @@ fun ItemRow(
     isOverdue: Boolean = false,
     onToggleStar: (() -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
+    // Screen 10's selection mode: long-press any row to start it, tap toggles membership.
+    // Selected cards use primaryContainer with a 2 dp primary border and a filled check_circle;
+    // unselected cards fall back to this row's normal surfaceContainerLow / surfaceContainer.
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    // Screen 04's "container transform from card" — pass the item's id (notes only; that's the
+    // only destination the handoff specs a transform for) so this row and EditorScreen's root
+    // share one bounds animation across the nav transition. Null outside a SharedTransitionLayout
+    // (e.g. @Preview) or for non-note items, where this is just a no-op Modifier.
+    sharedTransitionKey: String? = null,
 ) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedContentScope = LocalNavAnimatedContentScope.current
+    val transformModifier = if (sharedTransitionKey != null && sharedTransitionScope != null && animatedContentScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(key = "item-container-$sharedTransitionKey"),
+                animatedVisibilityScope = animatedContentScope,
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(transformModifier)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .let {
+                if (isSelected) {
+                    it.border(width = 2.dp, color = MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.large)
+                } else {
+                    it
+                }
+            },
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else if (isSelectionMode) {
+            MaterialTheme.colorScheme.surfaceContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
     ) {
         Row(
             modifier = Modifier.padding(vertical = 14.dp, horizontal = 16.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            CompleteCheckbox(isCompleted = isCompleted, onToggle = onToggleComplete)
+            if (isSelectionMode) {
+                SelectionMarker(isSelected = isSelected)
+            } else {
+                CompleteCheckbox(isCompleted = isCompleted, onToggle = onToggleComplete)
+            }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -173,6 +221,32 @@ private fun CompleteCheckbox(isCompleted: Boolean, onToggle: () -> Unit) {
                 modifier = Modifier
                     .size(24.dp)
                     .border(width = 2.dp, color = MaterialTheme.colorScheme.onSurfaceVariant, shape = RoundedCornerShape(cornerRadius)),
+            )
+        }
+    }
+}
+
+/** Screen 10's selection-mode leading marker — a filled check_circle when selected, an empty
+ * ring otherwise, replacing the complete-checkbox for the duration of selection mode. */
+@Composable
+private fun SelectionMarker(isSelected: Boolean) {
+    Box(
+        modifier = Modifier.size(48.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = "Selected",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .border(width = 2.dp, color = MaterialTheme.colorScheme.onSurfaceVariant, shape = RoundedCornerShape(50))
+                    .semantics { contentDescription = "Not selected" },
             )
         }
     }

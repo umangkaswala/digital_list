@@ -130,6 +130,10 @@ class ItemRepositoryImpl @Inject constructor(
         itemDao.setPinnedToNotification(id, pinned, Instant.now().toEpochMilli())
     }
 
+    override suspend fun setArchived(id: String, archived: Boolean) {
+        itemDao.setArchived(id, archived, Instant.now().toEpochMilli())
+    }
+
     override suspend fun toggleSubItem(subItemId: String) {
         itemDao.toggleSubItem(subItemId)
     }

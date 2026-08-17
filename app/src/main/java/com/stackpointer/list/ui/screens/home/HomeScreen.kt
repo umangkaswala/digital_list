@@ -51,6 +51,8 @@ import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.NavDestination
 import com.stackpointer.list.ui.components.SectionHeader
+import com.stackpointer.list.ui.components.SelectionActions
+import com.stackpointer.list.ui.components.SelectionTopBar
 import com.stackpointer.list.ui.components.UndoSnackbarHost
 import com.stackpointer.list.ui.components.ViewTile
 import com.stackpointer.list.ui.components.showUndoSnackbar
@@ -63,6 +65,7 @@ import java.time.Instant
 
 @Composable
 fun HomeScreen(
+    onOpenTasks: () -> Unit,
     onOpenToday: () -> Unit,
     onOpenScheduled: () -> Unit,
     onOpenStarred: () -> Unit,
@@ -90,6 +93,7 @@ fun HomeScreen(
 
     HomeContent(
         uiState = uiState,
+        onOpenTasks = onOpenTasks,
         onOpenToday = onOpenToday,
         onOpenScheduled = onOpenScheduled,
         onOpenStarred = onOpenStarred,
@@ -104,6 +108,12 @@ fun HomeScreen(
         onOpenSettings = onOpenSettings,
         onCompleteItem = viewModel::completeItem,
         onOpenCapture = { captureViewModel.openFor(CapturePrefill.NONE) },
+        onToggleSelected = viewModel::toggleSelected,
+        onClearSelection = viewModel::clearSelection,
+        onBulkPin = viewModel::bulkPin,
+        onBulkAddToCollection = viewModel::bulkAddToCollection,
+        onBulkArchive = viewModel::bulkArchive,
+        onBulkDelete = viewModel::bulkDelete,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
@@ -113,6 +123,7 @@ fun HomeScreen(
 @Composable
 private fun HomeContent(
     uiState: HomeUiState,
+    onOpenTasks: () -> Unit,
     onOpenToday: () -> Unit,
     onOpenScheduled: () -> Unit,
     onOpenStarred: () -> Unit,
@@ -127,12 +138,35 @@ private fun HomeContent(
     onOpenSettings: () -> Unit,
     onCompleteItem: (String) -> Unit,
     onOpenCapture: () -> Unit,
+    onToggleSelected: (String) -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onBulkPin: () -> Unit = {},
+    onBulkAddToCollection: (String) -> Unit = {},
+    onBulkArchive: () -> Unit = {},
+    onBulkDelete: () -> Unit = {},
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            if (uiState.isSelectionMode) {
+                SelectionTopBar(
+                    selectedCount = uiState.selectedIds.size,
+                    onClose = onClearSelection,
+                    actions = {
+                        SelectionActions(
+                            collections = uiState.collections,
+                            onPin = onBulkPin,
+                            onAddToCollection = onBulkAddToCollection,
+                            onArchive = onBulkArchive,
+                            onDelete = onBulkDelete,
+                        )
+                    },
+                )
+            }
+        },
         snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
@@ -189,8 +223,14 @@ private fun HomeContent(
                             isCompleted = item.isCompleted,
                             isStarred = item.isStarred,
                             isOverdue = bucket.label == BucketLabel.PAST,
-                            onClick = { onOpenItem(item) },
+                            onClick = {
+                                if (uiState.isSelectionMode) onToggleSelected(item.id) else onOpenItem(item)
+                            },
                             onToggleComplete = { onCompleteItem(item.id) },
+                            isSelectionMode = uiState.isSelectionMode,
+                            isSelected = item.id in uiState.selectedIds,
+                            onLongClick = { onToggleSelected(item.id) },
+                        sharedTransitionKey = if (item.isNote) item.id else null,
                             modifier = Modifier
                                 .padding(horizontal = 16.dp, vertical = 4.dp)
                                 .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
@@ -216,8 +256,7 @@ private fun HomeContent(
                     onSelect = { destination ->
                         when (destination) {
                             NavDestination.HOME -> Unit
-                            // TODO: no Tasks screen in CLAUDE.md's target ui/screens list — stays unwired.
-                            NavDestination.TASKS -> Unit
+                            NavDestination.TASKS -> onOpenTasks()
                             NavDestination.COLLECTIONS -> onOpenCollections()
                         }
                     },
@@ -381,6 +420,7 @@ private fun HomeScreenPreview() {
                 noAlertCount = 7,
                 completedCount = 308,
             ),
+            onOpenTasks = {},
             onOpenToday = {},
             onOpenScheduled = {},
             onOpenStarred = {},

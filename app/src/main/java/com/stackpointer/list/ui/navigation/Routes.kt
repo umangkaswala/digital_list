@@ -4,6 +4,7 @@ package com.stackpointer.list.ui.navigation
  * editor take an itemId path segment. */
 object Routes {
     const val HOME = "home"
+    const val TASKS = "tasks"
     const val TODAY = "today"
     const val SCHEDULED = "scheduled"
     const val STARRED = "starred"

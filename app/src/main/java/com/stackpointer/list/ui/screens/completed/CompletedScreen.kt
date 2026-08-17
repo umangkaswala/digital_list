@@ -31,6 +31,8 @@ import com.stackpointer.list.ui.components.EmptyState
 import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
 import com.stackpointer.list.ui.components.ItemRow
 import com.stackpointer.list.ui.components.SectionHeader
+import com.stackpointer.list.ui.components.SelectionActions
+import com.stackpointer.list.ui.components.SelectionTopBar
 import com.stackpointer.list.ui.components.UndoSnackbarHost
 import com.stackpointer.list.ui.screens.common.ItemFormatting
 import com.stackpointer.list.ui.theme.DigitalListTheme
@@ -49,6 +51,12 @@ fun CompletedScreen(
         onBack = onBack,
         onOpenItem = onOpenItem,
         onRestore = viewModel::restoreToIncomplete,
+        onToggleSelected = viewModel::toggleSelected,
+        onClearSelection = viewModel::clearSelection,
+        onBulkPin = viewModel::bulkPin,
+        onBulkAddToCollection = viewModel::bulkAddToCollection,
+        onBulkArchive = viewModel::bulkArchive,
+        onBulkDelete = viewModel::bulkDelete,
         modifier = modifier,
     )
 }
@@ -60,24 +68,46 @@ private fun CompletedContent(
     onBack: () -> Unit,
     onOpenItem: (Item) -> Unit,
     onRestore: (Item) -> Unit,
+    onToggleSelected: (String) -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onBulkPin: () -> Unit = {},
+    onBulkAddToCollection: (String) -> Unit = {},
+    onBulkArchive: () -> Unit = {},
+    onBulkDelete: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text("Completed") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    // TODO(M8): a real bulk-clear needs a confirmation dialog and a
-                    // multi-item undo the current single-token model doesn't support yet.
-                    TextButton(onClick = {}) { Text("Clear all") }
-                },
-            )
+            if (uiState.isSelectionMode) {
+                SelectionTopBar(
+                    selectedCount = uiState.selectedIds.size,
+                    onClose = onClearSelection,
+                    actions = {
+                        SelectionActions(
+                            collections = uiState.collections,
+                            onPin = onBulkPin,
+                            onAddToCollection = onBulkAddToCollection,
+                            onArchive = onBulkArchive,
+                            onDelete = onBulkDelete,
+                        )
+                    },
+                )
+            } else {
+                TopAppBar(
+                    title = { Text("Completed") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        // TODO(M8): a real bulk-clear needs a confirmation dialog and a
+                        // multi-item undo the current single-token model doesn't support yet.
+                        TextButton(onClick = {}) { Text("Clear all") }
+                    },
+                )
+            }
         },
         snackbarHost = { UndoSnackbarHost(remember { SnackbarHostState() }) },
     ) { innerPadding ->
@@ -109,11 +139,19 @@ private fun CompletedContent(
                             ?.let { done -> ItemFormatting.collectionNames(item)?.let { "$done · $it" } ?: done },
                         isCompleted = true,
                         isStarred = item.isStarred,
-                        onClick = { onOpenItem(item) },
+                        onClick = {
+                            if (uiState.isSelectionMode) onToggleSelected(item.id) else onOpenItem(item)
+                        },
                         onToggleComplete = { onRestore(item) },
-                        trailingContent = {
-                            IconButton(onClick = { onRestore(item) }) {
-                                Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Restore ${item.title}")
+                        isSelectionMode = uiState.isSelectionMode,
+                        isSelected = item.id in uiState.selectedIds,
+                        onLongClick = { onToggleSelected(item.id) },
+                        sharedTransitionKey = if (item.isNote) item.id else null,
+                        trailingContent = if (uiState.isSelectionMode) null else {
+                            {
+                                IconButton(onClick = { onRestore(item) }) {
+                                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Restore ${item.title}")
+                                }
                             }
                         },
                         modifier = Modifier

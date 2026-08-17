@@ -1,5 +1,6 @@
 package com.stackpointer.list.ui.screens.editor
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,6 +47,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -54,6 +61,8 @@ import com.stackpointer.list.domain.model.Collection
 import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.model.SubItem
 import com.stackpointer.list.ui.components.NotificationBarMenuItems
+import com.stackpointer.list.ui.navigation.LocalNavAnimatedContentScope
+import com.stackpointer.list.ui.navigation.LocalSharedTransitionScope
 import com.stackpointer.list.ui.theme.DigitalListTheme
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -66,18 +75,39 @@ import java.time.temporal.ChronoUnit
  * its own `notifications`/`keep` icons per CLAUDE.md), so inventing a meaning for it here
  * would contradict "ask rather than invent."
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun EditorScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    // Screen 04's "container transform from card" — the tapped item's id, passed by the NavHost
+    // from the route argument (not from [uiState], since that only resolves once the item has
+    // loaded, and the transform needs to start immediately on navigation). Matches the key
+    // ItemRow registers for the same id. See ui/navigation/SharedTransition.kt.
+    sharedTransitionKey: String? = null,
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedContentScope = LocalNavAnimatedContentScope.current
+    val transformModifier = if (sharedTransitionKey != null && sharedTransitionScope != null && animatedContentScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(key = "item-container-$sharedTransitionKey"),
+                animatedVisibilityScope = animatedContentScope,
+            )
+        }
+    } else {
+        Modifier
+    }
+
     if (uiState.isLoading) return
 
     EditorContent(
         uiState = uiState,
         onBack = onBack,
+        modifier = modifier.then(transformModifier),
         onTitleChange = viewModel::updateTitle,
         onBodyChange = viewModel::updateBody,
         onTogglePinned = viewModel::togglePinned,
@@ -87,7 +117,6 @@ fun EditorScreen(
         onAddChecklistItem = viewModel::addChecklistItem,
         onChecklistItemTextChange = viewModel::updateChecklistItemText,
         onToggleChecklistItem = viewModel::toggleChecklistItem,
-        modifier = modifier,
     )
 }
 
@@ -181,6 +210,7 @@ private fun EditorContent(
                 onValueChange = onBodyChange,
                 textStyle = MaterialTheme.typography.bodyLarge,
                 colors = plainTextFieldColors(),
+                visualTransformation = DateHighlightTransformation,
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 12.dp),
             )
 
@@ -204,6 +234,28 @@ private fun EditorContent(
             onToggle = onToggleCollection,
             onDismiss = { collectionPickerOpen = false },
         )
+    }
+}
+
+/** Screen 04 body text: "Friday 10:30" rendered bold inline (the master design canvas's actual
+ * markup for this — `<span style="font-weight: 700;">Friday 10:30</span>` — takes precedence
+ * over SCREENS.md's looser "highlighted inline in secondaryContainer" prose per CLAUDE.md's
+ * "take the value from the HTML" rule). A plain-text scan over the body, not a stored span
+ * model (the toolbar comment above explains why there isn't one), so it only needs to find
+ * date/time-shaped phrases as the text renders. */
+private val DateHighlightRegex = Regex(
+    """\b(Today|Tomorrow|Yesterday|Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)""" +
+        """(\s+\d{1,2}:\d{2}\s?(?:AM|PM|am|pm)?)?\b""" +
+        """|\b\d{1,2}:\d{2}\s?(?:AM|PM|am|pm)?\b""",
+)
+
+private object DateHighlightTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val builder = AnnotatedString.Builder(text)
+        DateHighlightRegex.findAll(text.text).forEach { match ->
+            builder.addStyle(SpanStyle(fontWeight = FontWeight.Bold), match.range.first, match.range.last + 1)
+        }
+        return TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
     }
 }
 

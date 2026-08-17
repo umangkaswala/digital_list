@@ -43,6 +43,8 @@ import com.stackpointer.list.ui.components.EmptyState
 import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
 import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
+import com.stackpointer.list.ui.components.SelectionActions
+import com.stackpointer.list.ui.components.SelectionTopBar
 import com.stackpointer.list.ui.components.UndoSnackbarHost
 import com.stackpointer.list.ui.components.showUndoSnackbar
 import com.stackpointer.list.ui.screens.capture.CaptureMode
@@ -88,6 +90,12 @@ fun NoAlertScreen(
         onAddTime = { item -> captureViewModel.openForExisting(item, CaptureMode.TIME) },
         onCommitTemplate = viewModel::commitTemplate,
         onCompleteItem = viewModel::completeItem,
+        onToggleSelected = viewModel::toggleSelected,
+        onClearSelection = viewModel::clearSelection,
+        onBulkPin = viewModel::bulkPin,
+        onBulkAddToCollection = viewModel::bulkAddToCollection,
+        onBulkArchive = viewModel::bulkArchive,
+        onBulkDelete = viewModel::bulkDelete,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
@@ -109,6 +117,12 @@ private fun NoAlertContent(
     onAddTime: (Item) -> Unit,
     onCommitTemplate: (TemplateDraft) -> Unit,
     onCompleteItem: (String) -> Unit,
+    onToggleSelected: (String) -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onBulkPin: () -> Unit = {},
+    onBulkAddToCollection: (String) -> Unit = {},
+    onBulkArchive: () -> Unit = {},
+    onBulkDelete: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier,
 ) {
@@ -117,28 +131,44 @@ private fun NoAlertContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text("No alert") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onOpenSearch) { Icon(Icons.Filled.Search, contentDescription = "Search") }
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
-                    }
-                    GlobalOverflowMenu(
-                        expanded = menuExpanded,
-                        onDismiss = { menuExpanded = false },
-                        onManageCollections = onOpenCollections,
-                        onTryTheseOut = onOpenTemplates,
-                        onRecycleBin = onOpenRecycleBin,
-                        onSettings = onOpenSettings,
-                    )
-                },
-            )
+            if (uiState.isSelectionMode) {
+                SelectionTopBar(
+                    selectedCount = uiState.selectedIds.size,
+                    onClose = onClearSelection,
+                    actions = {
+                        SelectionActions(
+                            collections = uiState.collections,
+                            onPin = onBulkPin,
+                            onAddToCollection = onBulkAddToCollection,
+                            onArchive = onBulkArchive,
+                            onDelete = onBulkDelete,
+                        )
+                    },
+                )
+            } else {
+                TopAppBar(
+                    title = { Text("No alert") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onOpenSearch) { Icon(Icons.Filled.Search, contentDescription = "Search") }
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                        }
+                        GlobalOverflowMenu(
+                            expanded = menuExpanded,
+                            onDismiss = { menuExpanded = false },
+                            onManageCollections = onOpenCollections,
+                            onTryTheseOut = onOpenTemplates,
+                            onRecycleBin = onOpenRecycleBin,
+                            onSettings = onOpenSettings,
+                        )
+                    },
+                )
+            }
         },
         bottomBar = {
             CaptureBar(
@@ -179,15 +209,23 @@ private fun NoAlertContent(
                     checklistProgress = ItemFormatting.checklistProgress(item),
                     isCompleted = item.isCompleted,
                     isStarred = item.isStarred,
-                    onClick = { onOpenItem(item) },
+                    onClick = {
+                        if (uiState.isSelectionMode) onToggleSelected(item.id) else onOpenItem(item)
+                    },
                     onToggleComplete = { onCompleteItem(item.id) },
-                    trailingContent = {
-                        AssistChip(
-                            onClick = { onAddTime(item) },
-                            label = { Text("Add time") },
-                            leadingIcon = { Icon(Icons.Filled.AlarmAdd, contentDescription = null, modifier = Modifier.padding(0.dp)) },
-                            colors = AssistChipDefaults.assistChipColors(),
-                        )
+                    isSelectionMode = uiState.isSelectionMode,
+                    isSelected = item.id in uiState.selectedIds,
+                    onLongClick = { onToggleSelected(item.id) },
+                    sharedTransitionKey = if (item.isNote) item.id else null,
+                    trailingContent = if (uiState.isSelectionMode) null else {
+                        {
+                            AssistChip(
+                                onClick = { onAddTime(item) },
+                                label = { Text("Add time") },
+                                leadingIcon = { Icon(Icons.Filled.AlarmAdd, contentDescription = null, modifier = Modifier.padding(0.dp)) },
+                                colors = AssistChipDefaults.assistChipColors(),
+                            )
+                        }
                     },
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 4.dp)

@@ -12,4 +12,8 @@ data class HomeUiState(
     val noAlertCount: Int = 0,
     val completedCount: Int = 0,
     val buckets: List<Bucket> = emptyList(),
-)
+    val selectedIds: Set<String> = emptySet(),
+    val collections: List<com.stackpointer.list.domain.model.Collection> = emptyList(),
+) {
+    val isSelectionMode: Boolean get() = selectedIds.isNotEmpty()
+}

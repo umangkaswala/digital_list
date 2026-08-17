@@ -31,6 +31,7 @@ interface ItemRepository {
     suspend fun setPinned(id: String, pinned: Boolean)
     suspend fun setShownInNotificationBar(id: String, shown: Boolean)
     suspend fun setPinnedToNotification(id: String, pinned: Boolean)
+    suspend fun setArchived(id: String, archived: Boolean)
     suspend fun toggleSubItem(subItemId: String)
 
     suspend fun undo(token: UndoToken)

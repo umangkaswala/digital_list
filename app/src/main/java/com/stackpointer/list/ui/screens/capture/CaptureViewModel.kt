@@ -188,6 +188,17 @@ class CaptureViewModel @Inject constructor(
         item.copy(subItems = item.subItems.map { if (it.id == id) it.copy(text = text) else it })
     }
 
+    /** Drag-to-reorder (screen 22) — [toIndex] is a position within the sortOrder-sorted list.
+     * Re-sequences sortOrder for every sub-item so the new order round-trips through Room on
+     * the next [confirm], same as the initial order assigned in [addSubItem]. */
+    fun moveSubItem(id: String, toIndex: Int) = updateDraft { item ->
+        val sorted = item.subItems.sortedBy { it.sortOrder }.toMutableList()
+        val fromIndex = sorted.indexOfFirst { it.id == id }
+        if (fromIndex == -1 || toIndex !in sorted.indices || fromIndex == toIndex) return@updateDraft item
+        sorted.add(toIndex, sorted.removeAt(fromIndex))
+        item.copy(subItems = sorted.mapIndexed { index, subItem -> subItem.copy(sortOrder = index) })
+    }
+
     // --- Label / collection mode (screen 23) ---
 
     fun toggleCollection(collection: Collection) = updateDraft { item ->

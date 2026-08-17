@@ -32,6 +32,8 @@ import com.stackpointer.list.ui.components.EmptyState
 import com.stackpointer.list.ui.components.ExpressivePullToRefreshBox
 import com.stackpointer.list.ui.components.GlobalOverflowMenu
 import com.stackpointer.list.ui.components.ItemRow
+import com.stackpointer.list.ui.components.SelectionActions
+import com.stackpointer.list.ui.components.SelectionTopBar
 import com.stackpointer.list.ui.components.UndoSnackbarHost
 import com.stackpointer.list.ui.components.showUndoSnackbar
 import com.stackpointer.list.ui.screens.common.ItemFormatting
@@ -69,6 +71,12 @@ fun StarredScreen(
         onOpenRecycleBin = onOpenRecycleBin,
         onOpenSettings = onOpenSettings,
         onCompleteItem = viewModel::completeItem,
+        onToggleSelected = viewModel::toggleSelected,
+        onClearSelection = viewModel::clearSelection,
+        onBulkPin = viewModel::bulkPin,
+        onBulkAddToCollection = viewModel::bulkAddToCollection,
+        onBulkArchive = viewModel::bulkArchive,
+        onBulkDelete = viewModel::bulkDelete,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
@@ -86,6 +94,12 @@ private fun StarredContent(
     onOpenRecycleBin: () -> Unit,
     onOpenSettings: () -> Unit,
     onCompleteItem: (String) -> Unit,
+    onToggleSelected: (String) -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onBulkPin: () -> Unit = {},
+    onBulkAddToCollection: (String) -> Unit = {},
+    onBulkArchive: () -> Unit = {},
+    onBulkDelete: () -> Unit = {},
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
@@ -94,28 +108,44 @@ private fun StarredContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text("Starred") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onOpenSearch) { Icon(Icons.Filled.Search, contentDescription = "Search") }
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
-                    }
-                    GlobalOverflowMenu(
-                        expanded = menuExpanded,
-                        onDismiss = { menuExpanded = false },
-                        onManageCollections = onOpenCollections,
-                        onTryTheseOut = onOpenTemplates,
-                        onRecycleBin = onOpenRecycleBin,
-                        onSettings = onOpenSettings,
-                    )
-                },
-            )
+            if (uiState.isSelectionMode) {
+                SelectionTopBar(
+                    selectedCount = uiState.selectedIds.size,
+                    onClose = onClearSelection,
+                    actions = {
+                        SelectionActions(
+                            collections = uiState.collections,
+                            onPin = onBulkPin,
+                            onAddToCollection = onBulkAddToCollection,
+                            onArchive = onBulkArchive,
+                            onDelete = onBulkDelete,
+                        )
+                    },
+                )
+            } else {
+                TopAppBar(
+                    title = { Text("Starred") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onOpenSearch) { Icon(Icons.Filled.Search, contentDescription = "Search") }
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                        }
+                        GlobalOverflowMenu(
+                            expanded = menuExpanded,
+                            onDismiss = { menuExpanded = false },
+                            onManageCollections = onOpenCollections,
+                            onTryTheseOut = onOpenTemplates,
+                            onRecycleBin = onOpenRecycleBin,
+                            onSettings = onOpenSettings,
+                        )
+                    },
+                )
+            }
         },
         snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { innerPadding ->
@@ -142,8 +172,14 @@ private fun StarredContent(
                     checklistProgress = ItemFormatting.checklistProgress(item),
                     isCompleted = item.isCompleted,
                     isStarred = item.isStarred,
-                    onClick = { onOpenItem(item) },
+                    onClick = {
+                        if (uiState.isSelectionMode) onToggleSelected(item.id) else onOpenItem(item)
+                    },
                     onToggleComplete = { onCompleteItem(item.id) },
+                    isSelectionMode = uiState.isSelectionMode,
+                    isSelected = item.id in uiState.selectedIds,
+                    onLongClick = { onToggleSelected(item.id) },
+                    sharedTransitionKey = if (item.isNote) item.id else null,
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 4.dp)
                         .animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),

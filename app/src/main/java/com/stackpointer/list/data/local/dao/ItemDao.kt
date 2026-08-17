@@ -109,6 +109,9 @@ interface ItemDao {
     @Query("UPDATE items SET isPinnedToNotification = :pinned, updatedAt = :now WHERE id = :id")
     suspend fun setPinnedToNotification(id: String, pinned: Boolean, now: Long)
 
+    @Query("UPDATE items SET isArchived = :archived, updatedAt = :now WHERE id = :id")
+    suspend fun setArchived(id: String, archived: Boolean, now: Long)
+
     @Query("UPDATE items SET deletedAt = :deletedAt, updatedAt = :now WHERE id = :id")
     suspend fun setDeletedAt(id: String, deletedAt: Long?, now: Long)
 

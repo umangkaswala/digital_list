@@ -1,8 +1,8 @@
-package com.stackpointer.list.ui.screens.starred
+package com.stackpointer.list.ui.screens.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.stackpointer.list.domain.model.SavedView
+import com.stackpointer.list.domain.model.Item
 import com.stackpointer.list.domain.repository.CollectionRepository
 import com.stackpointer.list.domain.repository.ItemRepository
 import com.stackpointer.list.domain.usecase.BulkSelectionActions
@@ -17,10 +17,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
 import javax.inject.Inject
 
 @HiltViewModel
-class StarredViewModel @Inject constructor(
+class TasksViewModel @Inject constructor(
     private val itemRepository: ItemRepository,
     collectionRepository: CollectionRepository,
     private val bulkActions: BulkSelectionActions,
@@ -31,13 +33,39 @@ class StarredViewModel @Inject constructor(
 
     private val selectedIds = MutableStateFlow<Set<String>>(emptySet())
 
-    val uiState: StateFlow<StarredUiState> = combine(
-        itemRepository.observeSavedView(SavedView.STARRED),
+    val uiState: StateFlow<TasksUiState> = combine(
+        itemRepository.observeAll(),
         selectedIds,
         collectionRepository.observeAll(),
-    ) { items, selected, collections ->
-        StarredUiState(isLoading = false, items = items, selectedIds = selected, collections = collections)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StarredUiState())
+    ) { allItems, selected, collections ->
+        val tasks = allItems.filter { !it.isNote && it.deletedAt == null }
+        val incomplete = tasks.filter { !it.isCompleted }
+        TasksUiState(
+            isLoading = false,
+            groups = group(incomplete, Instant.now()),
+            completedCount = tasks.count { it.isCompleted },
+            selectedIds = selected,
+            collections = collections,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TasksUiState())
+
+    private fun group(items: List<Item>, now: Instant): List<TaskGroup> {
+        val zone = ZoneId.systemDefault()
+        val today = now.atZone(zone).toLocalDate()
+        val buckets = items.groupBy { item ->
+            val due = item.dueAt?.atZone(zone)?.toLocalDate()
+            when {
+                due == null -> TaskWhenGroup.NO_DATE
+                due.isBefore(today) -> TaskWhenGroup.OVERDUE
+                due.isEqual(today) -> TaskWhenGroup.TODAY
+                due.isEqual(today.plusDays(1)) -> TaskWhenGroup.TOMORROW
+                else -> TaskWhenGroup.LATER
+            }
+        }
+        return TaskWhenGroup.entries.mapNotNull { label ->
+            buckets[label]?.takeIf { it.isNotEmpty() }?.let { TaskGroup(label, it) }
+        }
+    }
 
     fun completeItem(id: String) {
         viewModelScope.launch {

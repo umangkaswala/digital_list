@@ -1,6 +1,9 @@
 package com.stackpointer.list.ui.navigation
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -21,9 +24,12 @@ import com.stackpointer.list.ui.screens.scheduled.ScheduledScreen
 import com.stackpointer.list.ui.screens.search.SearchScreen
 import com.stackpointer.list.ui.screens.settings.SettingsScreen
 import com.stackpointer.list.ui.screens.starred.StarredScreen
+import com.stackpointer.list.ui.screens.tasks.TasksScreen
 import com.stackpointer.list.ui.screens.templates.TemplatesScreen
 import com.stackpointer.list.ui.screens.today.TodayScreen
+import com.stackpointer.list.ui.components.NavDestination
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun DigitalListNavHost(
     modifier: Modifier = Modifier,
@@ -55,100 +61,141 @@ fun DigitalListNavHost(
         }
     }
 
-    NavHost(navController = navController, startDestination = Routes.HOME, modifier = modifier) {
-        composable(Routes.HOME) {
-            HomeScreen(
-                onOpenToday = { navController.navigate(Routes.TODAY) },
-                onOpenScheduled = { navController.navigate(Routes.SCHEDULED) },
-                onOpenStarred = { navController.navigate(Routes.STARRED) },
-                // TODO(place reminders is deferred — see Features.placeReminders): no screen yet.
-                onOpenPlace = {},
-                onOpenNoAlert = { navController.navigate(Routes.NO_ALERT) },
-                onOpenCompleted = { navController.navigate(Routes.COMPLETED) },
-                onOpenItem = openItem,
-                onOpenSearch = onOpenSearch,
-                onOpenCollections = onOpenCollections,
-                onOpenTemplates = onOpenTemplates,
-                onOpenRecycleBin = onOpenRecycleBin,
-                onOpenSettings = onOpenSettings,
-            )
-        }
-        composable(Routes.TODAY) {
-            TodayScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = openItem,
-                onOpenSearch = onOpenSearch,
-                onOpenCollections = onOpenCollections,
-                onOpenTemplates = onOpenTemplates,
-                onOpenRecycleBin = onOpenRecycleBin,
-                onOpenSettings = onOpenSettings,
-            )
-        }
-        composable(Routes.SCHEDULED) {
-            ScheduledScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = openItem,
-                onOpenSearch = onOpenSearch,
-                onOpenCollections = onOpenCollections,
-                onOpenTemplates = onOpenTemplates,
-                onOpenRecycleBin = onOpenRecycleBin,
-                onOpenSettings = onOpenSettings,
-            )
-        }
-        composable(Routes.STARRED) {
-            StarredScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = openItem,
-                onOpenSearch = onOpenSearch,
-                onOpenCollections = onOpenCollections,
-                onOpenTemplates = onOpenTemplates,
-                onOpenRecycleBin = onOpenRecycleBin,
-                onOpenSettings = onOpenSettings,
-            )
-        }
-        composable(Routes.NO_ALERT) {
-            NoAlertScreen(
-                onBack = navController::popBackStack,
-                onOpenItem = openItem,
-                onOpenSearch = onOpenSearch,
-                onOpenCollections = onOpenCollections,
-                onOpenTemplates = onOpenTemplates,
-                onOpenRecycleBin = onOpenRecycleBin,
-                onOpenSettings = onOpenSettings,
-            )
-        }
-        composable(Routes.COMPLETED) {
-            CompletedScreen(onBack = navController::popBackStack, onOpenItem = openItem)
-        }
-        composable(Routes.SEARCH) {
-            SearchScreen(onBack = navController::popBackStack, onOpenItem = openItem)
-        }
-        composable(Routes.COLLECTIONS) {
-            CollectionsScreen(onBack = navController::popBackStack)
-        }
-        composable(Routes.TEMPLATES) {
-            TemplatesScreen(onBack = navController::popBackStack)
-        }
-        composable(Routes.RECYCLE_BIN) {
-            BinScreen(onBack = navController::popBackStack)
-        }
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onBack = navController::popBackStack,
-                onOpenRecycleBin = onOpenRecycleBin,
-            )
-        }
-        composable(
-            route = Routes.DETAIL_PATTERN,
-            arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
-        ) {
-            DetailScreen(onBack = navController::popBackStack)
-        }
-        composable(
-            route = Routes.EDITOR_PATTERN,
-            arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
-        ) {
-            EditorScreen(onBack = navController::popBackStack)
+    SharedTransitionLayout(modifier = modifier) {
+        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+            NavHost(navController = navController, startDestination = Routes.HOME) {
+                composable(Routes.HOME) {
+                    CompositionLocalProvider(LocalNavAnimatedContentScope provides this@composable) {
+                        HomeScreen(
+                            onOpenTasks = { navController.navigate(Routes.TASKS) },
+                            onOpenToday = { navController.navigate(Routes.TODAY) },
+                            onOpenScheduled = { navController.navigate(Routes.SCHEDULED) },
+                            onOpenStarred = { navController.navigate(Routes.STARRED) },
+                            // TODO(place reminders is deferred — see Features.placeReminders): no screen yet.
+                            onOpenPlace = {},
+                            onOpenNoAlert = { navController.navigate(Routes.NO_ALERT) },
+                            onOpenCompleted = { navController.navigate(Routes.COMPLETED) },
+                            onOpenItem = openItem,
+                            onOpenSearch = onOpenSearch,
+                            onOpenCollections = onOpenCollections,
+                            onOpenTemplates = onOpenTemplates,
+                            onOpenRecycleBin = onOpenRecycleBin,
+                            onOpenSettings = onOpenSettings,
+                        )
+                    }
+                }
+                composable(Routes.TASKS) {
+                    CompositionLocalProvider(LocalNavAnimatedContentScope provides this@composable) {
+                        TasksScreen(
+                            onOpenItem = openItem,
+                            onOpenCollections = onOpenCollections,
+                            onOpenCompleted = { navController.navigate(Routes.COMPLETED) },
+                            onOpenTemplates = onOpenTemplates,
+                            onOpenRecycleBin = onOpenRecycleBin,
+                            onOpenSettings = onOpenSettings,
+                            onSelectNav = { destination ->
+                                when (destination) {
+                                    NavDestination.HOME -> navController.navigate(Routes.HOME)
+                                    NavDestination.TASKS -> Unit
+                                    NavDestination.COLLECTIONS -> navController.navigate(Routes.COLLECTIONS)
+                                }
+                            },
+                        )
+                    }
+                }
+                composable(Routes.TODAY) {
+                    CompositionLocalProvider(LocalNavAnimatedContentScope provides this@composable) {
+                        TodayScreen(
+                            onBack = navController::popBackStack,
+                            onOpenItem = openItem,
+                            onOpenSearch = onOpenSearch,
+                            onOpenCollections = onOpenCollections,
+                            onOpenTemplates = onOpenTemplates,
+                            onOpenRecycleBin = onOpenRecycleBin,
+                            onOpenSettings = onOpenSettings,
+                        )
+                    }
+                }
+                composable(Routes.SCHEDULED) {
+                    CompositionLocalProvider(LocalNavAnimatedContentScope provides this@composable) {
+                        ScheduledScreen(
+                            onBack = navController::popBackStack,
+                            onOpenItem = openItem,
+                            onOpenSearch = onOpenSearch,
+                            onOpenCollections = onOpenCollections,
+                            onOpenTemplates = onOpenTemplates,
+                            onOpenRecycleBin = onOpenRecycleBin,
+                            onOpenSettings = onOpenSettings,
+                        )
+                    }
+                }
+                composable(Routes.STARRED) {
+                    CompositionLocalProvider(LocalNavAnimatedContentScope provides this@composable) {
+                        StarredScreen(
+                            onBack = navController::popBackStack,
+                            onOpenItem = openItem,
+                            onOpenSearch = onOpenSearch,
+                            onOpenCollections = onOpenCollections,
+                            onOpenTemplates = onOpenTemplates,
+                            onOpenRecycleBin = onOpenRecycleBin,
+                            onOpenSettings = onOpenSettings,
+                        )
+                    }
+                }
+                composable(Routes.NO_ALERT) {
+                    CompositionLocalProvider(LocalNavAnimatedContentScope provides this@composable) {
+                        NoAlertScreen(
+                            onBack = navController::popBackStack,
+                            onOpenItem = openItem,
+                            onOpenSearch = onOpenSearch,
+                            onOpenCollections = onOpenCollections,
+                            onOpenTemplates = onOpenTemplates,
+                            onOpenRecycleBin = onOpenRecycleBin,
+                            onOpenSettings = onOpenSettings,
+                        )
+                    }
+                }
+                composable(Routes.COMPLETED) {
+                    CompositionLocalProvider(LocalNavAnimatedContentScope provides this@composable) {
+                        CompletedScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+                    }
+                }
+                composable(Routes.SEARCH) {
+                    SearchScreen(onBack = navController::popBackStack, onOpenItem = openItem)
+                }
+                composable(Routes.COLLECTIONS) {
+                    CollectionsScreen(onBack = navController::popBackStack)
+                }
+                composable(Routes.TEMPLATES) {
+                    TemplatesScreen(onBack = navController::popBackStack)
+                }
+                composable(Routes.RECYCLE_BIN) {
+                    BinScreen(onBack = navController::popBackStack)
+                }
+                composable(Routes.SETTINGS) {
+                    SettingsScreen(
+                        onBack = navController::popBackStack,
+                        onOpenRecycleBin = onOpenRecycleBin,
+                    )
+                }
+                composable(
+                    route = Routes.DETAIL_PATTERN,
+                    arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
+                ) {
+                    DetailScreen(onBack = navController::popBackStack)
+                }
+                composable(
+                    route = Routes.EDITOR_PATTERN,
+                    arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
+                ) { backStackEntry ->
+                    CompositionLocalProvider(LocalNavAnimatedContentScope provides this@composable) {
+                        EditorScreen(
+                            onBack = navController::popBackStack,
+                            sharedTransitionKey = backStackEntry.arguments?.getString("itemId"),
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -18,10 +18,12 @@ import com.stackpointer.list.Features
 
 /**
  * Screen 15's "global overflow menu" — anchored from every list screen's top bar `more_vert`.
- * `Sync now` (account sync), `Select` (bulk selection) and `Sort by` (per-view sort order) are
- * shown per the design but disabled: none of the list screens have selection mode or a
- * sort-order-aware query built yet (only the recycle bin got a scoped selection mode, for M8's
- * own screen), and account sync stays behind [Features.accountSync] like the rest of the app.
+ * `Select` now has a real entry point: long-press any row on Home/Today/Scheduled/Starred/
+ * No alert/Completed/Recycle bin starts selection mode (screen 10's push_pin/label/archive/
+ * more_vert bar). This menu item stays disabled rather than duplicating that entry point with
+ * its own zero-selection state; `Sync now` (account sync) stays behind [Features.accountSync];
+ * `Sort by` here is still a stub — per-view sort exists standalone on Scheduled (screen 13's own
+ * swap_vert), not as a general query this menu can drive yet.
  */
 @Composable
 fun GlobalOverflowMenu(
